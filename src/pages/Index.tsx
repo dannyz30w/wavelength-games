@@ -1,13 +1,53 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import React from "react";
+import { Helmet } from "react-helmet-async";
+import { Lobby } from "@/components/game/Lobby";
+import { GameRoom } from "@/components/game/GameRoom";
+import { useGameState } from "@/hooks/useGameState";
 
 const Index = () => {
+  const {
+    gameState,
+    playerId,
+    isLoading,
+    createRoom,
+    joinRoom,
+    startRound,
+    submitClue,
+    submitGuess,
+    predictSide,
+    nextRound,
+    leaveRoom,
+  } = useGameState();
+
+  const isInRoom = gameState.room !== null;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <>
+      <Helmet>
+        <title>Wavelength - Mind Reading Party Game</title>
+        <meta name="description" content="Play Wavelength online! A mind-reading party game where you try to guess where the Psychic's clue falls on the spectrum." />
+      </Helmet>
+
+      {isInRoom ? (
+        <GameRoom
+          gameState={gameState}
+          playerId={playerId}
+          isLoading={isLoading}
+          onStartRound={startRound}
+          onSubmitClue={submitClue}
+          onSubmitGuess={submitGuess}
+          onPredictSide={predictSide}
+          onNextRound={nextRound}
+          onLeaveRoom={leaveRoom}
+        />
+      ) : (
+        <Lobby
+          onCreateRoom={createRoom}
+          onJoinRoom={joinRoom}
+          isLoading={isLoading}
+        />
+      )}
+    </>
   );
 };
 
