@@ -27,7 +27,6 @@ interface GameRoomProps {
   onStartRound: () => Promise<void>;
   onSubmitClue: (clue: string) => Promise<void>;
   onSubmitGuess: (value: number) => Promise<void>;
-  onPredictSide: (side: "left" | "right") => Promise<void>;
   onNextRound: () => Promise<void>;
   onLeaveRoom: () => Promise<void>;
 }
@@ -39,7 +38,6 @@ export const GameRoom: React.FC<GameRoomProps> = ({
   onStartRound,
   onSubmitClue,
   onSubmitGuess,
-  onPredictSide,
   onNextRound,
   onLeaveRoom,
 }) => {
@@ -54,7 +52,6 @@ export const GameRoom: React.FC<GameRoomProps> = ({
 
   const isClueGiver = myPlayer.role === "psychic";
   const isGuesser = myPlayer.role === "guesser";
-  const otherPlayer = players.find(p => p.player_id !== playerId);
   const canStartRound = myPlayer.is_host && players.length >= 2;
   const isWaitingPhase = !currentRound || currentRound.phase === "complete" || currentRound.phase === "waiting";
 
@@ -83,6 +80,9 @@ export const GameRoom: React.FC<GameRoomProps> = ({
   const handleHideTarget = () => {
     setTargetHidden(true);
   };
+
+  // Convert target center from 0-100 to 0-180 degrees
+  const getTargetAngle = (value: number) => 180 - (value / 100) * 180;
 
   return (
     <div className="min-h-screen flex flex-col p-4 md:p-6">
@@ -209,8 +209,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                 <SemicircleSpectrum
                   leftLabel={currentRound.left_extreme}
                   rightLabel={currentRound.right_extreme}
-                  targetCenter={currentRound.target_center ? ((180 - (currentRound.target_center / 100) * 180)) : undefined}
-                  targetWidth={currentRound.target_width ? (currentRound.target_width / 100) * 180 : undefined}
+                  targetCenter={currentRound.target_center ? getTargetAngle(currentRound.target_center) : undefined}
                   showTarget={!targetHidden}
                 />
                 
@@ -329,61 +328,6 @@ export const GameRoom: React.FC<GameRoomProps> = ({
           </div>
         )}
 
-        {/* Predicting Phase - Left or Right */}
-        {currentRound?.phase === "predicting" && (
-          <div className="w-full max-w-2xl space-y-6 animate-slide-up">
-            <div className="text-center space-y-2">
-              <p className="text-muted-foreground">Clue: "{currentRound.clue}"</p>
-              <p className="text-xl">
-                Guess locked at position
-              </p>
-            </div>
-
-            <SemicircleSpectrum
-              leftLabel={currentRound.left_extreme}
-              rightLabel={currentRound.right_extreme}
-              needleAngle={currentRound.guess_value !== null ? 180 - (currentRound.guess_value / 100) * 180 : 90}
-            />
-
-            {isClueGiver ? (
-              <div className="text-center space-y-4">
-                <p className="text-lg font-display">
-                  Is the actual target to the LEFT or RIGHT of the guess?
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Predict correctly for +1 bonus point!
-                </p>
-                <div className="flex gap-4 justify-center">
-                  <Button
-                    variant="game"
-                    size="xl"
-                    onClick={() => onPredictSide("left")}
-                    disabled={isLoading}
-                    className="flex-1 max-w-40"
-                  >
-                    <ArrowLeft className="w-5 h-5 mr-2" />
-                    Left
-                  </Button>
-                  <Button
-                    variant="game"
-                    size="xl"
-                    onClick={() => onPredictSide("right")}
-                    disabled={isLoading}
-                    className="flex-1 max-w-40"
-                  >
-                    Right
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground">
-                The clue giver is predicting which side the target is on...
-              </p>
-            )}
-          </div>
-        )}
-
         {/* Reveal Phase */}
         {currentRound?.phase === "reveal" && (
           <div className="w-full max-w-2xl space-y-6 animate-slide-up">
@@ -394,8 +338,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
             <SemicircleSpectrum
               leftLabel={currentRound.left_extreme}
               rightLabel={currentRound.right_extreme}
-              targetCenter={currentRound.target_center ? (180 - (currentRound.target_center / 100) * 180) : undefined}
-              targetWidth={currentRound.target_width ? (currentRound.target_width / 100) * 180 : undefined}
+              targetCenter={currentRound.target_center ? getTargetAngle(currentRound.target_center) : undefined}
               needleAngle={currentRound.guess_value !== null ? 180 - (currentRound.guess_value / 100) * 180 : 90}
               showReveal={true}
             />
@@ -408,15 +351,6 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                   {currentRound.points_awarded} Points!
                 </span>
               </div>
-              
-              {currentRound.predicted_side && (
-                <p className={cn(
-                  "text-center",
-                  currentRound.prediction_correct ? "text-green-400" : "text-muted-foreground"
-                )}>
-                  Prediction was {currentRound.prediction_correct ? "correct! (+1 bonus)" : "incorrect"}
-                </p>
-              )}
 
               <div className="flex justify-center pt-4">
                 {canStartRound ? (

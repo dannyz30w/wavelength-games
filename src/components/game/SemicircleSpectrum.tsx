@@ -5,7 +5,7 @@ interface SemicircleSpectrumProps {
   leftLabel: string;
   rightLabel: string;
   targetCenter?: number; // 0-180 degrees
-  targetWidth?: number; // degrees width
+  targetWidth?: number; // degrees width (this will be the red zone)
   showTarget?: boolean;
   needleAngle?: number; // 0-180 degrees
   onNeedleChange?: (angle: number) => void;
@@ -132,15 +132,7 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
     onNeedleChange?.(newAngle);
   }, [isDraggable, localAngle, onNeedleChange]);
 
-  // Calculate target arc positions (for SVG)
-  const targetStartAngle = targetCenter !== undefined && targetWidth !== undefined
-    ? targetCenter - targetWidth / 2
-    : 0;
-  const targetEndAngle = targetCenter !== undefined && targetWidth !== undefined
-    ? targetCenter + targetWidth / 2
-    : 0;
-
-  // SVG arc helper
+  // SVG arc helper - creates a wedge/pie slice
   const describeArc = (startAngle: number, endAngle: number, innerRadius: number, outerRadius: number) => {
     const startRad = (180 - startAngle) * Math.PI / 180;
     const endRad = (180 - endAngle) * Math.PI / 180;
@@ -169,6 +161,13 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
   // Calculate needle position
   const needleRad = (180 - localAngle) * Math.PI / 180;
   const needleLength = 175;
+
+  // Target zone takes up 1/4 of the semicircle (45 degrees total)
+  // Red (center): 15 degrees, Orange: 15 degrees each side, Yellow: 15 degrees each side
+  // Total: 15 + 15*2 + 15*2 = 45 degrees (1/4 of 180)
+  const redWidth = 8; // smallest
+  const orangeWidth = 12; // medium
+  const yellowWidth = 25; // largest
 
   return (
     <div className={cn("w-full max-w-lg mx-auto", className)}>
@@ -201,9 +200,9 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
           
           {/* Main semicircle background */}
           <path
-            d={describeArc(0, 180, 80, 190)}
+            d={describeArc(0, 180, 20, 190)}
             fill="url(#spectrumGradient)"
-            className="opacity-30"
+            className="opacity-40"
           />
           
           {/* Outer border */}
@@ -216,54 +215,64 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
           
           {/* Inner border */}
           <path
-            d="M 120 200 A 80 80 0 0 1 280 200"
+            d="M 180 200 A 20 20 0 0 1 220 200"
             fill="none"
             stroke="hsl(var(--border))"
             strokeWidth="2"
           />
 
-          {/* Target zone - multi-colored bands (red center, orange sides, yellow outer) */}
-          {(showTarget || showReveal) && targetCenter !== undefined && targetWidth !== undefined && (
+          {/* Target zone - multi-colored bands filling 1/4 of semicircle */}
+          {(showTarget || showReveal) && targetCenter !== undefined && (
             <g className={cn(showReveal && "animate-reveal")}>
-              {/* Yellow outer band (10 points) */}
+              {/* Yellow outer band (10 points) - largest */}
               <path
-                d={describeArc(targetStartAngle - 15, targetStartAngle, 85, 185)}
+                d={describeArc(
+                  targetCenter - redWidth/2 - orangeWidth - yellowWidth, 
+                  targetCenter - redWidth/2 - orangeWidth, 
+                  20, 190
+                )}
                 fill="hsl(48, 96%, 53%)"
-                opacity="0.8"
-              />
-              <path
-                d={describeArc(targetEndAngle, targetEndAngle + 15, 85, 185)}
-                fill="hsl(48, 96%, 53%)"
-                opacity="0.8"
-              />
-              
-              {/* Orange band (20 points) */}
-              <path
-                d={describeArc(targetStartAngle - 5, targetStartAngle, 85, 185)}
-                fill="hsl(25, 95%, 53%)"
                 opacity="0.9"
               />
               <path
-                d={describeArc(targetEndAngle, targetEndAngle + 5, 85, 185)}
-                fill="hsl(25, 95%, 53%)"
+                d={describeArc(
+                  targetCenter + redWidth/2 + orangeWidth, 
+                  targetCenter + redWidth/2 + orangeWidth + yellowWidth, 
+                  20, 190
+                )}
+                fill="hsl(48, 96%, 53%)"
                 opacity="0.9"
               />
               
-              {/* Red center band (30 points - bullseye) */}
+              {/* Orange band (20 points) - medium */}
               <path
-                d={describeArc(targetStartAngle, targetEndAngle, 85, 185)}
-                fill="hsl(0, 84%, 60%)"
+                d={describeArc(
+                  targetCenter - redWidth/2 - orangeWidth, 
+                  targetCenter - redWidth/2, 
+                  20, 190
+                )}
+                fill="hsl(25, 95%, 53%)"
+                opacity="0.95"
+              />
+              <path
+                d={describeArc(
+                  targetCenter + redWidth/2, 
+                  targetCenter + redWidth/2 + orangeWidth, 
+                  20, 190
+                )}
+                fill="hsl(25, 95%, 53%)"
                 opacity="0.95"
               />
               
-              {/* Center line indicator */}
-              <line
-                x1={200 + 80 * Math.cos((180 - targetCenter) * Math.PI / 180)}
-                y1={200 - 80 * Math.sin((180 - targetCenter) * Math.PI / 180)}
-                x2={200 + 190 * Math.cos((180 - targetCenter) * Math.PI / 180)}
-                y2={200 - 190 * Math.sin((180 - targetCenter) * Math.PI / 180)}
-                stroke="hsl(0, 84%, 40%)"
-                strokeWidth="3"
+              {/* Red center band (30 points - bullseye) - smallest */}
+              <path
+                d={describeArc(
+                  targetCenter - redWidth/2, 
+                  targetCenter + redWidth/2, 
+                  20, 190
+                )}
+                fill="hsl(0, 84%, 55%)"
+                opacity="1"
               />
             </g>
           )}
@@ -272,8 +281,8 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
           {[...Array(19)].map((_, i) => {
             const angle = i * 10;
             const rad = (180 - angle) * Math.PI / 180;
-            const inner = i % 2 === 0 ? 185 : 182;
-            const outer = 195;
+            const inner = 190;
+            const outer = i % 2 === 0 ? 200 : 196;
             return (
               <line
                 key={i}
@@ -298,14 +307,14 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
                 x2={200 + needleLength * Math.cos(needleRad)}
                 y2={200 - needleLength * Math.sin(needleRad)}
                 stroke="hsl(var(--destructive))"
-                strokeWidth="4"
+                strokeWidth="5"
                 strokeLinecap="round"
                 className={cn(
                   "transition-all",
                   isDragging ? "duration-0" : "duration-150"
                 )}
                 style={{
-                  filter: "drop-shadow(0 0 8px hsl(var(--destructive) / 0.8))"
+                  filter: "drop-shadow(0 0 10px hsl(var(--destructive) / 0.9))"
                 }}
               />
               
@@ -313,7 +322,7 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
               <circle
                 cx="200"
                 cy="200"
-                r="12"
+                r="15"
                 fill="hsl(var(--destructive))"
                 stroke="hsl(var(--card))"
                 strokeWidth="3"
@@ -323,10 +332,10 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
               <circle
                 cx={200 + needleLength * Math.cos(needleRad)}
                 cy={200 - needleLength * Math.sin(needleRad)}
-                r="8"
+                r="10"
                 fill="hsl(var(--destructive))"
                 stroke="hsl(var(--card))"
-                strokeWidth="2"
+                strokeWidth="3"
                 className={cn(
                   "transition-all",
                   isDragging ? "duration-0" : "duration-150",
