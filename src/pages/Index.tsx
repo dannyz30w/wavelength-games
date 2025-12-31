@@ -14,7 +14,6 @@ const Index = () => {
     startRound,
     submitClue,
     submitGuess,
-    predictSide,
     nextRound,
     leaveRoom,
   } = useGameState();
@@ -36,7 +35,6 @@ const Index = () => {
           onStartRound={startRound}
           onSubmitClue={submitClue}
           onSubmitGuess={submitGuess}
-          onPredictSide={predictSide}
           onNextRound={nextRound}
           onLeaveRoom={leaveRoom}
         />

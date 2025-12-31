@@ -400,20 +400,38 @@ export const useGameState = () => {
   }, [gameState.currentRound, toast]);
 
   const submitGuess = useCallback(async (guessValue: number) => {
-    if (!gameState.currentRound) return;
+    if (!gameState.currentRound || !gameState.room) return;
     
     try {
+      const round = gameState.currentRound;
+      const targetCenter = round.target_center!;
+      const targetWidth = round.target_width!;
+      
+      // Calculate score immediately (no prediction phase)
+      const points = calculateScore(Math.round(guessValue), targetCenter, targetWidth);
+      
       await supabase
         .from("rounds")
         .update({
           guess_value: Math.round(guessValue),
-          phase: "predicting" as GamePhase,
+          points_awarded: points,
+          phase: "reveal" as GamePhase,
+          completed_at: new Date().toISOString(),
         })
         .eq("id", gameState.currentRound.id);
 
+      // Update guesser's score
+      const guesserPlayer = gameState.players.find(p => p.player_id === round.guesser_id);
+      if (guesserPlayer) {
+        await supabase
+          .from("players")
+          .update({ score: guesserPlayer.score + points })
+          .eq("id", guesserPlayer.id);
+      }
+
       toast({
         title: "Guess Submitted!",
-        description: "Waiting for prediction...",
+        description: `You scored ${points} points!`,
       });
     } catch (error) {
       console.error("Error submitting guess:", error);
@@ -423,7 +441,7 @@ export const useGameState = () => {
         variant: "destructive",
       });
     }
-  }, [gameState.currentRound, toast]);
+  }, [gameState.currentRound, gameState.room, gameState.players, toast]);
 
   const predictSide = useCallback(async (side: "left" | "right") => {
     if (!gameState.currentRound || !gameState.room) return;
