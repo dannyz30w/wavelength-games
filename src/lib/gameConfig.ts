@@ -1,10 +1,11 @@
 // Scoring configuration - easily tunable
+// Multi-colored target zone: Red (center) = 30, Orange = 20, Yellow = 10
 export const SCORING_CONFIG = {
   bands: [
-    { range: 0, points: 30 },   // Within target zone
-    { range: 10, points: 20 },  // Adjacent band
-    { range: 20, points: 10 },  // Next band
-    { range: 999, points: 0 },  // Outside all bands
+    { range: 0, points: 30 },   // Red center zone (bullseye)
+    { range: 5, points: 20 },   // Orange band (adjacent)
+    { range: 15, points: 10 },  // Yellow band (outer)
+    { range: 999, points: 0 },  // Miss
   ],
   predictionBonus: 1,
 };
