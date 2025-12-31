@@ -44,7 +44,9 @@
     /* Custom game colors */
     --spectrum-left: 200 100% 50%;
     --spectrum-right: 15 100% 55%;
-    --target-zone: 120 100% 45%;
+    --target-zone: 0 84% 60%;
+    --target-orange: 25 95% 53%;
+    --target-yellow: 48 96% 53%;
     --neon-glow: 180 100% 60%;
     --success: 150 100% 45%;
     --warning: 45 100% 50%;

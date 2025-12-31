@@ -1,20 +1,21 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Spectrum } from "./Spectrum";
-import { GameState, Round } from "@/lib/gameTypes";
+import { SemicircleSpectrum } from "./SemicircleSpectrum";
+import { GameState } from "@/lib/gameTypes";
 import { 
   Users, 
   Crown, 
   Eye, 
-  Crosshair, 
+  Target, 
   Send, 
   ArrowLeft, 
   ArrowRight,
   Check,
   Trophy,
   Sparkles,
-  Copy
+  Copy,
+  EyeOff
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -44,13 +45,14 @@ export const GameRoom: React.FC<GameRoomProps> = ({
 }) => {
   const { toast } = useToast();
   const [clue, setClue] = useState("");
-  const [guessValue, setGuessValue] = useState(50);
+  const [needleAngle, setNeedleAngle] = useState(90);
+  const [targetHidden, setTargetHidden] = useState(false);
   
   const { room, players, currentRound, myPlayer } = gameState;
   
   if (!room || !myPlayer) return null;
 
-  const isPsychic = myPlayer.role === "psychic";
+  const isClueGiver = myPlayer.role === "psychic";
   const isGuesser = myPlayer.role === "guesser";
   const otherPlayer = players.find(p => p.player_id !== playerId);
   const canStartRound = myPlayer.is_host && players.length >= 2;
@@ -68,10 +70,18 @@ export const GameRoom: React.FC<GameRoomProps> = ({
     if (!clue.trim()) return;
     await onSubmitClue(clue.trim());
     setClue("");
+    setTargetHidden(true);
   };
 
   const handleSubmitGuess = async () => {
+    // Convert angle to 0-100 scale for scoring
+    // Angle 180 = 0 (left), Angle 0 = 100 (right)
+    const guessValue = ((180 - needleAngle) / 180) * 100;
     await onSubmitGuess(guessValue);
+  };
+
+  const handleHideTarget = () => {
+    setTargetHidden(true);
   };
 
   return (
@@ -91,7 +101,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
           <Copy className="w-4 h-4 text-muted-foreground" />
         </button>
 
-        <div className="w-20" /> {/* Spacer for centering */}
+        <div className="w-20" />
       </header>
 
       {/* Players */}
@@ -115,7 +125,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
               {player.role === "psychic" ? (
                 <Eye className="w-5 h-5" />
               ) : player.role === "guesser" ? (
-                <Crosshair className="w-5 h-5" />
+                <Target className="w-5 h-5" />
               ) : (
                 <Users className="w-5 h-5" />
               )}
@@ -126,7 +136,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                 {player.is_host && <Crown className="w-4 h-4 text-warning flex-shrink-0" />}
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="capitalize">{player.role}</span>
+                <span>{player.role === "psychic" ? "Clue Giver" : player.role === "guesser" ? "Guesser" : "Waiting"}</span>
                 <span>•</span>
                 <span className="font-display">{player.score} pts</span>
               </div>
@@ -184,90 +194,95 @@ export const GameRoom: React.FC<GameRoomProps> = ({
           </div>
         )}
 
-        {/* Psychic Viewing Target */}
-        {currentRound?.phase === "psychic_viewing" && (
-          <div className="w-full max-w-2xl space-y-8 animate-slide-up">
-            {isPsychic ? (
+        {/* Clue Giver Viewing Target */}
+        {(currentRound?.phase === "psychic_viewing" || currentRound?.phase === "clue_giving") && (
+          <div className="w-full max-w-2xl space-y-6 animate-slide-up">
+            {isClueGiver ? (
               <>
                 <div className="text-center mb-4">
                   <span className="inline-flex items-center gap-2 px-4 py-2 bg-secondary/20 rounded-full text-secondary-foreground">
                     <Eye className="w-5 h-5" />
-                    <span className="font-display uppercase tracking-wider">You are the Psychic</span>
+                    <span className="font-display uppercase tracking-wider">You are giving the clue</span>
                   </span>
                 </div>
-                <Spectrum
+                
+                <SemicircleSpectrum
                   leftLabel={currentRound.left_extreme}
                   rightLabel={currentRound.right_extreme}
-                  targetCenter={currentRound.target_center!}
-                  targetWidth={currentRound.target_width!}
-                  showTarget={true}
+                  targetCenter={currentRound.target_center ? ((180 - (currentRound.target_center / 100) * 180)) : undefined}
+                  targetWidth={currentRound.target_width ? (currentRound.target_width / 100) * 180 : undefined}
+                  showTarget={!targetHidden}
                 />
-                <p className="text-center text-muted-foreground">
-                  The target zone is shown above. Type a clue that places something on this spectrum.
-                </p>
-                <div className="flex gap-3">
-                  <Input
-                    value={clue}
-                    onChange={(e) => setClue(e.target.value)}
-                    placeholder="Enter your clue..."
-                    maxLength={100}
-                    onKeyDown={(e) => e.key === "Enter" && handleSubmitClue()}
-                  />
-                  <Button
-                    variant="neon"
-                    size="default"
-                    onClick={handleSubmitClue}
-                    disabled={!clue.trim() || isLoading}
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </div>
+                
+                {!targetHidden ? (
+                  <div className="space-y-4">
+                    <p className="text-center text-muted-foreground">
+                      The colored zone shows where to aim. Give a clue that hints at this position!
+                    </p>
+                    <div className="text-center text-sm text-muted-foreground">
+                      <span className="inline-block px-2 py-1 bg-red-500/20 rounded mr-2">Red = 30 pts</span>
+                      <span className="inline-block px-2 py-1 bg-orange-500/20 rounded mr-2">Orange = 20 pts</span>
+                      <span className="inline-block px-2 py-1 bg-yellow-500/20 rounded">Yellow = 10 pts</span>
+                    </div>
+                    <div className="flex gap-3">
+                      <Input
+                        value={clue}
+                        onChange={(e) => setClue(e.target.value)}
+                        placeholder="Enter your clue..."
+                        maxLength={100}
+                        onKeyDown={(e) => e.key === "Enter" && clue.trim() && handleSubmitClue()}
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="neon"
+                        onClick={handleSubmitClue}
+                        disabled={!clue.trim() || isLoading}
+                      >
+                        <Send className="w-4 h-4 mr-2" />
+                        Send
+                      </Button>
+                    </div>
+                    <div className="text-center">
+                      <Button
+                        variant="outline"
+                        onClick={handleHideTarget}
+                      >
+                        <EyeOff className="w-4 h-4 mr-2" />
+                        Hide Target
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center space-y-4">
+                    <p className="text-muted-foreground">Target is hidden. Enter your clue:</p>
+                    <div className="flex gap-3">
+                      <Input
+                        value={clue}
+                        onChange={(e) => setClue(e.target.value)}
+                        placeholder="Enter your clue..."
+                        maxLength={100}
+                        onKeyDown={(e) => e.key === "Enter" && clue.trim() && handleSubmitClue()}
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="neon"
+                        onClick={handleSubmitClue}
+                        disabled={!clue.trim() || isLoading}
+                      >
+                        <Send className="w-4 h-4 mr-2" />
+                        Send
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <div className="text-center space-y-4">
                 <div className="animate-float">
                   <Eye className="w-16 h-16 mx-auto text-secondary" />
                 </div>
-                <p className="text-xl">The Psychic is viewing the target...</p>
+                <p className="text-xl">The clue giver is viewing the target...</p>
                 <p className="text-muted-foreground">Get ready to guess!</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Clue Giving Phase (same as above but for display) */}
-        {currentRound?.phase === "clue_giving" && (
-          <div className="w-full max-w-2xl space-y-8 animate-slide-up">
-            {isPsychic ? (
-              <>
-                <Spectrum
-                  leftLabel={currentRound.left_extreme}
-                  rightLabel={currentRound.right_extreme}
-                  targetCenter={currentRound.target_center!}
-                  targetWidth={currentRound.target_width!}
-                  showTarget={true}
-                />
-                <div className="flex gap-3">
-                  <Input
-                    value={clue}
-                    onChange={(e) => setClue(e.target.value)}
-                    placeholder="Enter your clue..."
-                    maxLength={100}
-                    onKeyDown={(e) => e.key === "Enter" && handleSubmitClue()}
-                  />
-                  <Button
-                    variant="neon"
-                    onClick={handleSubmitClue}
-                    disabled={!clue.trim() || isLoading}
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <div className="text-center space-y-4">
-                <Eye className="w-16 h-16 mx-auto text-secondary animate-pulse-glow" />
-                <p className="text-xl">The Psychic is thinking of a clue...</p>
               </div>
             )}
           </div>
@@ -275,7 +290,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
 
         {/* Guessing Phase */}
         {currentRound?.phase === "guessing" && (
-          <div className="w-full max-w-2xl space-y-8 animate-slide-up">
+          <div className="w-full max-w-2xl space-y-6 animate-slide-up">
             <div className="text-center">
               <p className="text-muted-foreground mb-2">The clue is:</p>
               <p className="text-3xl md:text-4xl font-display neon-text">
@@ -283,53 +298,61 @@ export const GameRoom: React.FC<GameRoomProps> = ({
               </p>
             </div>
 
-            <Spectrum
+            <SemicircleSpectrum
               leftLabel={currentRound.left_extreme}
               rightLabel={currentRound.right_extreme}
-              guessValue={guessValue}
-              onGuessChange={setGuessValue}
+              needleAngle={needleAngle}
+              onNeedleChange={setNeedleAngle}
               isDraggable={isGuesser}
             />
 
             {isGuesser ? (
-              <div className="text-center">
+              <div className="text-center space-y-4">
+                <p className="text-muted-foreground">
+                  Drag the needle to where you think the target is
+                </p>
                 <Button
                   variant="neon"
                   size="xl"
                   onClick={handleSubmitGuess}
                   disabled={isLoading}
                 >
-                  <Check className="w-5 h-5" />
-                  Confirm Guess
+                  <Check className="w-5 h-5 mr-2" />
+                  Lock In Guess
                 </Button>
               </div>
             ) : (
               <p className="text-center text-muted-foreground">
-                Waiting for the Guesser to make their guess...
+                Waiting for the guesser to make their guess...
               </p>
             )}
           </div>
         )}
 
-        {/* Predicting Phase */}
+        {/* Predicting Phase - Left or Right */}
         {currentRound?.phase === "predicting" && (
-          <div className="w-full max-w-2xl space-y-8 animate-slide-up">
+          <div className="w-full max-w-2xl space-y-6 animate-slide-up">
             <div className="text-center space-y-2">
               <p className="text-muted-foreground">Clue: "{currentRound.clue}"</p>
               <p className="text-xl">
-                The guess is at <span className="font-display text-primary">{currentRound.guess_value}</span>
+                Guess locked at position
               </p>
             </div>
 
-            <Spectrum
+            <SemicircleSpectrum
               leftLabel={currentRound.left_extreme}
               rightLabel={currentRound.right_extreme}
-              guessValue={currentRound.guess_value!}
+              needleAngle={currentRound.guess_value !== null ? 180 - (currentRound.guess_value / 100) * 180 : 90}
             />
 
-            {isPsychic ? (
+            {isClueGiver ? (
               <div className="text-center space-y-4">
-                <p className="text-lg">Is the actual target to the LEFT or RIGHT of the guess?</p>
+                <p className="text-lg font-display">
+                  Is the actual target to the LEFT or RIGHT of the guess?
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Predict correctly for +1 bonus point!
+                </p>
                 <div className="flex gap-4 justify-center">
                   <Button
                     variant="game"
@@ -338,7 +361,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                     disabled={isLoading}
                     className="flex-1 max-w-40"
                   >
-                    <ArrowLeft className="w-5 h-5" />
+                    <ArrowLeft className="w-5 h-5 mr-2" />
                     Left
                   </Button>
                   <Button
@@ -349,13 +372,13 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                     className="flex-1 max-w-40"
                   >
                     Right
-                    <ArrowRight className="w-5 h-5" />
+                    <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </div>
               </div>
             ) : (
               <p className="text-center text-muted-foreground">
-                The Psychic is predicting which side the target is on...
+                The clue giver is predicting which side the target is on...
               </p>
             )}
           </div>
@@ -363,17 +386,17 @@ export const GameRoom: React.FC<GameRoomProps> = ({
 
         {/* Reveal Phase */}
         {currentRound?.phase === "reveal" && (
-          <div className="w-full max-w-2xl space-y-8 animate-slide-up">
+          <div className="w-full max-w-2xl space-y-6 animate-slide-up">
             <div className="text-center space-y-2">
               <p className="text-muted-foreground">Clue: "{currentRound.clue}"</p>
             </div>
 
-            <Spectrum
+            <SemicircleSpectrum
               leftLabel={currentRound.left_extreme}
               rightLabel={currentRound.right_extreme}
-              targetCenter={currentRound.target_center!}
-              targetWidth={currentRound.target_width!}
-              guessValue={currentRound.guess_value!}
+              targetCenter={currentRound.target_center ? (180 - (currentRound.target_center / 100) * 180) : undefined}
+              targetWidth={currentRound.target_width ? (currentRound.target_width / 100) * 180 : undefined}
+              needleAngle={currentRound.guess_value !== null ? 180 - (currentRound.guess_value / 100) * 180 : 90}
               showReveal={true}
             />
 
@@ -389,7 +412,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
               {currentRound.predicted_side && (
                 <p className={cn(
                   "text-center",
-                  currentRound.prediction_correct ? "text-success" : "text-muted-foreground"
+                  currentRound.prediction_correct ? "text-green-400" : "text-muted-foreground"
                 )}>
                   Prediction was {currentRound.prediction_correct ? "correct! (+1 bonus)" : "incorrect"}
                 </p>
@@ -404,7 +427,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                     disabled={isLoading}
                   >
                     Next Round
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 ) : (
                   <p className="text-muted-foreground">Waiting for host...</p>
@@ -413,6 +436,13 @@ export const GameRoom: React.FC<GameRoomProps> = ({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Total Scores */}
+      <div className="mt-6 text-center">
+        <p className="text-sm text-muted-foreground">
+          Total Score: <span className="font-display text-primary">{myPlayer.score}</span>
+        </p>
       </div>
     </div>
   );
