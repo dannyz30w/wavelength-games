@@ -5,7 +5,6 @@ interface SemicircleSpectrumProps {
   leftLabel: string;
   rightLabel: string;
   targetCenter?: number; // 0-180 degrees
-  targetWidth?: number; // degrees width (this will be the red zone)
   showTarget?: boolean;
   needleAngle?: number; // 0-180 degrees
   onNeedleChange?: (angle: number) => void;
@@ -18,7 +17,6 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
   leftLabel,
   rightLabel,
   targetCenter,
-  targetWidth,
   showTarget = false,
   needleAngle,
   onNeedleChange,
@@ -30,21 +28,22 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Convert mouse position to angle
+  // Convert mouse position to angle - fixed for proper direction
   const getAngleFromPosition = useCallback((clientX: number, clientY: number) => {
     if (!containerRef.current) return localAngle;
     
     const rect = containerRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
-    const centerY = rect.bottom;
+    const centerY = rect.top + rect.height; // bottom of semicircle
     
     const dx = clientX - centerX;
     const dy = centerY - clientY;
     
+    // Calculate angle from center, 0° is right, 180° is left
     let angle = Math.atan2(dy, dx) * (180 / Math.PI);
     
-    // Clamp to 0-180 range
-    angle = Math.max(0, Math.min(180, angle));
+    // Clamp to valid semicircle range
+    angle = Math.max(5, Math.min(175, angle));
     
     return angle;
   }, [localAngle]);
@@ -132,51 +131,47 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
     onNeedleChange?.(newAngle);
   }, [isDraggable, localAngle, onNeedleChange]);
 
-  // SVG arc helper - creates a wedge/pie slice
-  const describeArc = (startAngle: number, endAngle: number, innerRadius: number, outerRadius: number) => {
-    const startRad = (180 - startAngle) * Math.PI / 180;
-    const endRad = (180 - endAngle) * Math.PI / 180;
+  // SVG pie slice helper - creates a wedge from center
+  const describePieSlice = (startAngle: number, endAngle: number, radius: number) => {
+    const startRad = startAngle * Math.PI / 180;
+    const endRad = endAngle * Math.PI / 180;
     
-    const x1Outer = 200 + outerRadius * Math.cos(startRad);
-    const y1Outer = 200 - outerRadius * Math.sin(startRad);
-    const x2Outer = 200 + outerRadius * Math.cos(endRad);
-    const y2Outer = 200 - outerRadius * Math.sin(endRad);
-    
-    const x1Inner = 200 + innerRadius * Math.cos(startRad);
-    const y1Inner = 200 - innerRadius * Math.sin(startRad);
-    const x2Inner = 200 + innerRadius * Math.cos(endRad);
-    const y2Inner = 200 - innerRadius * Math.sin(endRad);
+    const x1 = 200 + radius * Math.cos(startRad);
+    const y1 = 200 - radius * Math.sin(startRad);
+    const x2 = 200 + radius * Math.cos(endRad);
+    const y2 = 200 - radius * Math.sin(endRad);
     
     const largeArcFlag = Math.abs(endAngle - startAngle) > 180 ? 1 : 0;
     
     return [
-      "M", x1Outer, y1Outer,
-      "A", outerRadius, outerRadius, 0, largeArcFlag, 0, x2Outer, y2Outer,
-      "L", x2Inner, y2Inner,
-      "A", innerRadius, innerRadius, 0, largeArcFlag, 1, x1Inner, y1Inner,
+      "M", 200, 200,
+      "L", x1, y1,
+      "A", radius, radius, 0, largeArcFlag, 0, x2, y2,
       "Z"
     ].join(" ");
   };
 
   // Calculate needle position
-  const needleRad = (180 - localAngle) * Math.PI / 180;
-  const needleLength = 175;
+  const needleRad = localAngle * Math.PI / 180;
+  const needleLength = 170;
 
-  // Target zone takes up 1/4 of the semicircle (45 degrees total)
-  // Red (center): 15 degrees, Orange: 15 degrees each side, Yellow: 15 degrees each side
-  // Total: 15 + 15*2 + 15*2 = 45 degrees (1/4 of 180)
-  const redWidth = 8; // smallest
-  const orangeWidth = 12; // medium
-  const yellowWidth = 25; // largest
+  // Target zone - smaller, fills completely from center
+  // Red (center): 6°, Orange: 8° each side, Yellow: 10° each side
+  // Total: 6 + 16 + 20 = 42 degrees (~1/4 of 180)
+  const redWidth = 6;
+  const orangeWidth = 8;
+  const yellowWidth = 10;
+
+  const radius = 180;
 
   return (
-    <div className={cn("w-full max-w-lg mx-auto", className)}>
+    <div className={cn("w-full max-w-md mx-auto", className)}>
       {/* SVG Semicircle */}
       <div 
         ref={containerRef}
         className={cn(
-          "relative select-none",
-          isDraggable && "cursor-pointer"
+          "relative select-none touch-none",
+          isDraggable && "cursor-crosshair"
         )}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
@@ -188,101 +183,98 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
         tabIndex={isDraggable ? 0 : undefined}
         onKeyDown={handleKeyDown}
       >
-        <svg viewBox="0 0 400 220" className="w-full">
-          {/* Background gradient arc */}
+        <svg viewBox="0 0 400 210" className="w-full drop-shadow-lg">
           <defs>
-            <linearGradient id="spectrumGradient" x1="0%" y1="50%" x2="100%" y2="50%">
-              <stop offset="0%" stopColor="hsl(var(--spectrum-left))" />
-              <stop offset="50%" stopColor="hsl(var(--warning))" />
-              <stop offset="100%" stopColor="hsl(var(--spectrum-right))" />
+            {/* Smooth gradient for background */}
+            <linearGradient id="spectrumBg" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="hsl(220, 70%, 50%)" />
+              <stop offset="50%" stopColor="hsl(280, 50%, 40%)" />
+              <stop offset="100%" stopColor="hsl(340, 70%, 50%)" />
             </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
           </defs>
           
-          {/* Main semicircle background */}
+          {/* Main semicircle background - clean gradient */}
           <path
-            d={describeArc(0, 180, 20, 190)}
-            fill="url(#spectrumGradient)"
-            className="opacity-40"
+            d={describePieSlice(0, 180, radius)}
+            fill="url(#spectrumBg)"
+            opacity="0.3"
           />
           
-          {/* Outer border */}
+          {/* Outer arc border */}
           <path
-            d="M 10 200 A 190 190 0 0 1 390 200"
+            d={`M ${200 - radius} 200 A ${radius} ${radius} 0 0 1 ${200 + radius} 200`}
             fill="none"
             stroke="hsl(var(--border))"
-            strokeWidth="3"
+            strokeWidth="4"
           />
           
-          {/* Inner border */}
-          <path
-            d="M 180 200 A 20 20 0 0 1 220 200"
-            fill="none"
-            stroke="hsl(var(--border))"
-            strokeWidth="2"
-          />
+          {/* Base line */}
+          <line x1={200 - radius} y1="200" x2={200 + radius} y2="200" stroke="hsl(var(--border))" strokeWidth="4" />
 
-          {/* Target zone - multi-colored bands filling 1/4 of semicircle */}
+          {/* Target zone - colored pie slices from center */}
           {(showTarget || showReveal) && targetCenter !== undefined && (
-            <g className={cn(showReveal && "animate-reveal")}>
-              {/* Yellow outer band (10 points) - largest */}
+            <g className={cn(showReveal && "animate-reveal")} filter="url(#glow)">
+              {/* Yellow outer band (10 points) */}
               <path
-                d={describeArc(
+                d={describePieSlice(
                   targetCenter - redWidth/2 - orangeWidth - yellowWidth, 
                   targetCenter - redWidth/2 - orangeWidth, 
-                  20, 190
+                  radius
                 )}
                 fill="hsl(48, 96%, 53%)"
-                opacity="0.9"
               />
               <path
-                d={describeArc(
+                d={describePieSlice(
                   targetCenter + redWidth/2 + orangeWidth, 
                   targetCenter + redWidth/2 + orangeWidth + yellowWidth, 
-                  20, 190
+                  radius
                 )}
                 fill="hsl(48, 96%, 53%)"
-                opacity="0.9"
               />
               
-              {/* Orange band (20 points) - medium */}
+              {/* Orange band (20 points) */}
               <path
-                d={describeArc(
+                d={describePieSlice(
                   targetCenter - redWidth/2 - orangeWidth, 
                   targetCenter - redWidth/2, 
-                  20, 190
+                  radius
                 )}
                 fill="hsl(25, 95%, 53%)"
-                opacity="0.95"
               />
               <path
-                d={describeArc(
+                d={describePieSlice(
                   targetCenter + redWidth/2, 
                   targetCenter + redWidth/2 + orangeWidth, 
-                  20, 190
+                  radius
                 )}
                 fill="hsl(25, 95%, 53%)"
-                opacity="0.95"
               />
               
-              {/* Red center band (30 points - bullseye) - smallest */}
+              {/* Red center (30 points - bullseye) */}
               <path
-                d={describeArc(
+                d={describePieSlice(
                   targetCenter - redWidth/2, 
                   targetCenter + redWidth/2, 
-                  20, 190
+                  radius
                 )}
-                fill="hsl(0, 84%, 55%)"
-                opacity="1"
+                fill="hsl(0, 72%, 50%)"
               />
             </g>
           )}
 
-          {/* Tick marks */}
+          {/* Tick marks around edge */}
           {[...Array(19)].map((_, i) => {
             const angle = i * 10;
-            const rad = (180 - angle) * Math.PI / 180;
-            const inner = 190;
-            const outer = i % 2 === 0 ? 200 : 196;
+            const rad = angle * Math.PI / 180;
+            const inner = radius - 8;
+            const outer = radius;
             return (
               <line
                 key={i}
@@ -290,16 +282,28 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
                 y1={200 - inner * Math.sin(rad)}
                 x2={200 + outer * Math.cos(rad)}
                 y2={200 - outer * Math.sin(rad)}
-                stroke="hsl(var(--muted-foreground))"
+                stroke="hsl(var(--foreground))"
                 strokeWidth={i % 2 === 0 ? 2 : 1}
-                opacity={0.5}
+                opacity={0.4}
               />
             );
           })}
 
           {/* Needle */}
           {(isDraggable || needleAngle !== undefined) && (
-            <g>
+            <g filter="url(#glow)">
+              {/* Needle shadow */}
+              <line
+                x1="200"
+                y1="200"
+                x2={200 + needleLength * Math.cos(needleRad)}
+                y2={200 - needleLength * Math.sin(needleRad)}
+                stroke="hsl(0, 0%, 0%)"
+                strokeWidth="8"
+                strokeLinecap="round"
+                opacity="0.2"
+                className={cn(!isDragging && "transition-all duration-100 ease-out")}
+              />
               {/* Needle line */}
               <line
                 x1="200"
@@ -307,39 +311,30 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
                 x2={200 + needleLength * Math.cos(needleRad)}
                 y2={200 - needleLength * Math.sin(needleRad)}
                 stroke="hsl(var(--destructive))"
-                strokeWidth="5"
+                strokeWidth="6"
                 strokeLinecap="round"
-                className={cn(
-                  "transition-all",
-                  isDragging ? "duration-0" : "duration-150"
-                )}
-                style={{
-                  filter: "drop-shadow(0 0 10px hsl(var(--destructive) / 0.9))"
-                }}
+                className={cn(!isDragging && "transition-all duration-100 ease-out")}
               />
               
-              {/* Needle base circle */}
+              {/* Needle base */}
               <circle
                 cx="200"
                 cy="200"
-                r="15"
-                fill="hsl(var(--destructive))"
-                stroke="hsl(var(--card))"
-                strokeWidth="3"
+                r="12"
+                fill="hsl(var(--card))"
+                stroke="hsl(var(--destructive))"
+                strokeWidth="4"
               />
               
-              {/* Needle tip */}
+              {/* Needle tip pointer */}
               <circle
                 cx={200 + needleLength * Math.cos(needleRad)}
                 cy={200 - needleLength * Math.sin(needleRad)}
-                r="10"
+                r="8"
                 fill="hsl(var(--destructive))"
-                stroke="hsl(var(--card))"
-                strokeWidth="3"
                 className={cn(
-                  "transition-all",
-                  isDragging ? "duration-0" : "duration-150",
-                  isDraggable && "cursor-grab"
+                  !isDragging && "transition-all duration-100 ease-out",
+                  isDraggable && "cursor-grab active:cursor-grabbing"
                 )}
               />
             </g>
@@ -348,22 +343,19 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
       </div>
 
       {/* Labels */}
-      <div className="flex justify-between mt-4 px-4">
-        <span className="text-base md:text-lg font-display text-spectrum-left font-bold uppercase tracking-wider text-center max-w-[120px]">
+      <div className="flex justify-between mt-2 px-2">
+        <span className="text-sm md:text-base font-bold text-muted-foreground uppercase tracking-wide max-w-[100px] text-left">
           {leftLabel}
         </span>
-        <div className="flex-1 flex justify-center items-center">
-          <div className="h-0.5 w-20 bg-gradient-to-r from-spectrum-left via-muted to-spectrum-right opacity-50" />
-        </div>
-        <span className="text-base md:text-lg font-display text-spectrum-right font-bold uppercase tracking-wider text-center max-w-[120px]">
+        <span className="text-sm md:text-base font-bold text-muted-foreground uppercase tracking-wide max-w-[100px] text-right">
           {rightLabel}
         </span>
       </div>
 
-      {/* Keyboard hint for accessibility */}
+      {/* Instruction */}
       {isDraggable && (
-        <p className="text-xs text-muted-foreground mt-4 text-center">
-          Drag the needle or use arrow keys to adjust
+        <p className="text-xs text-muted-foreground mt-2 text-center opacity-70">
+          Click or drag to position the needle
         </p>
       )}
     </div>
