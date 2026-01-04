@@ -50,9 +50,9 @@ export const GameRoom: React.FC<GameRoomProps> = ({
   
   if (!room || !myPlayer) return null;
 
-  const isClueGiver = myPlayer.role === "psychic";
-  const isGuesser = myPlayer.role === "guesser";
-  const canStartRound = myPlayer.is_host && players.length >= 2;
+  const isClueGiver = currentRound?.psychic_id === playerId;
+  const isGuesser = currentRound?.guesser_id === playerId;
+  const canStartRound = players.length >= 2;
   const isWaitingPhase = !currentRound || currentRound.phase === "complete" || currentRound.phase === "waiting";
 
   const copyRoomCode = () => {
@@ -106,43 +106,47 @@ export const GameRoom: React.FC<GameRoomProps> = ({
 
       {/* Players */}
       <div className="grid grid-cols-2 gap-4 mb-8">
-        {players.map((player) => (
-          <div
-            key={player.id}
-            className={cn(
-              "glass-panel p-4 flex items-center gap-3",
-              player.player_id === playerId && "neon-border"
-            )}
-          >
-            <div className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center",
-              player.role === "psychic" 
-                ? "bg-secondary text-secondary-foreground" 
-                : player.role === "guesser"
-                ? "bg-accent text-accent-foreground"
-                : "bg-muted text-muted-foreground"
-            )}>
-              {player.role === "psychic" ? (
-                <Eye className="w-5 h-5" />
-              ) : player.role === "guesser" ? (
-                <Target className="w-5 h-5" />
-              ) : (
-                <Users className="w-5 h-5" />
+        {players.map((player) => {
+          const isPlayerClueGiver = currentRound?.psychic_id === player.player_id;
+          const isPlayerGuesser = currentRound?.guesser_id === player.player_id;
+          return (
+            <div
+              key={player.id}
+              className={cn(
+                "glass-panel p-4 flex items-center gap-3",
+                player.player_id === playerId && "neon-border"
               )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-display text-sm truncate">{player.name}</span>
-                {player.is_host && <Crown className="w-4 h-4 text-warning flex-shrink-0" />}
+            >
+              <div className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center",
+                isPlayerClueGiver 
+                  ? "bg-secondary text-secondary-foreground" 
+                  : isPlayerGuesser
+                  ? "bg-accent text-accent-foreground"
+                  : "bg-muted text-muted-foreground"
+              )}>
+                {isPlayerClueGiver ? (
+                  <Eye className="w-5 h-5" />
+                ) : isPlayerGuesser ? (
+                  <Target className="w-5 h-5" />
+                ) : (
+                  <Users className="w-5 h-5" />
+                )}
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{player.role === "psychic" ? "Clue Giver" : player.role === "guesser" ? "Guesser" : "Waiting"}</span>
-                <span>•</span>
-                <span className="font-display">{player.score} pts</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-sm truncate">{player.name}</span>
+                  {player.is_host && <Crown className="w-4 h-4 text-warning flex-shrink-0" />}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>{isPlayerClueGiver ? "Clue Giver" : isPlayerGuesser ? "Guesser" : "Ready"}</span>
+                  <span>•</span>
+                  <span className="font-display">{player.score} pts</span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         
         {players.length < 2 && (
           <div className="glass-panel p-4 flex items-center justify-center border-dashed border-2 border-border">
@@ -194,8 +198,8 @@ export const GameRoom: React.FC<GameRoomProps> = ({
           </div>
         )}
 
-        {/* Clue Giver Viewing Target */}
-        {(currentRound?.phase === "psychic_viewing" || currentRound?.phase === "clue_giving") && (
+        {/* Clue Giving Phase */}
+        {currentRound?.phase === "clue_giving" && (
           <div className="w-full max-w-2xl space-y-6 animate-slide-up">
             {isClueGiver ? (
               <>
@@ -353,19 +357,15 @@ export const GameRoom: React.FC<GameRoomProps> = ({
               </div>
 
               <div className="flex justify-center pt-4">
-                {canStartRound ? (
-                  <Button
-                    variant="neon"
-                    size="lg"
-                    onClick={onNextRound}
-                    disabled={isLoading}
-                  >
-                    Next Round
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                ) : (
-                  <p className="text-muted-foreground">Waiting for host...</p>
-                )}
+                <Button
+                  variant="neon"
+                  size="lg"
+                  onClick={onNextRound}
+                  disabled={isLoading}
+                >
+                  Next Round
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
               </div>
             </div>
           </div>
