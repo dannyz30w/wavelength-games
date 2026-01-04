@@ -5,8 +5,7 @@ import {
   generateRoomCode, 
   generateTarget, 
   getRandomExtremes, 
-  calculateScore, 
-  getTargetSide,
+  calculateScore,
   generatePlayerId 
 } from "@/lib/gameConfig";
 import { useToast } from "@/hooks/use-toast";
@@ -31,7 +30,6 @@ export const useGameState = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [playerId] = useState(getStoredPlayerId);
 
-  // Subscribe to room changes
   useEffect(() => {
     if (!gameState.room?.id) return;
 
@@ -63,7 +61,6 @@ export const useGameState = () => {
           filter: `room_id=eq.${gameState.room.id}`,
         },
         async () => {
-          // Refetch players on any change
           const { data: players } = await supabase
             .from("players")
             .select("*")
@@ -88,7 +85,6 @@ export const useGameState = () => {
           filter: `room_id=eq.${gameState.room.id}`,
         },
         async () => {
-          // Refetch current round
           const { data: rounds } = await supabase
             .from("rounds")
             .select("*")
@@ -116,7 +112,6 @@ export const useGameState = () => {
     try {
       const code = generateRoomCode();
       
-      // Create room
       const { data: room, error: roomError } = await supabase
         .from("rooms")
         .insert({
@@ -130,7 +125,6 @@ export const useGameState = () => {
 
       if (roomError) throw roomError;
 
-      // Add host as player
       const { data: player, error: playerError } = await supabase
         .from("players")
         .insert({
@@ -174,7 +168,6 @@ export const useGameState = () => {
   const joinRoom = useCallback(async (code: string, playerName: string) => {
     setIsLoading(true);
     try {
-      // Find room
       const { data: room, error: roomError } = await supabase
         .from("rooms")
         .select("*")
@@ -190,16 +183,14 @@ export const useGameState = () => {
         return false;
       }
 
-      // Check if already in room
       const { data: existingPlayer } = await supabase
         .from("players")
         .select("*")
         .eq("room_id", room.id)
         .eq("player_id", playerId)
-        .single();
+        .maybeSingle();
 
       if (existingPlayer) {
-        // Already in room, just load state
         const { data: players } = await supabase
           .from("players")
           .select("*")
@@ -222,7 +213,6 @@ export const useGameState = () => {
         return true;
       }
 
-      // Check player count
       const { data: players } = await supabase
         .from("players")
         .select("*")
@@ -237,7 +227,6 @@ export const useGameState = () => {
         return false;
       }
 
-      // Join room
       const { data: player, error: playerError } = await supabase
         .from("players")
         .insert({
@@ -295,7 +284,6 @@ export const useGameState = () => {
       const target = generateTarget();
       const extremes = getRandomExtremes();
       
-      // Assign roles - current player is psychic, other is guesser
       const otherPlayer = gameState.players.find(p => p.player_id !== playerId);
       
       if (!otherPlayer) {
@@ -304,13 +292,13 @@ export const useGameState = () => {
           description: "Wait for another player to join",
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
 
-      // Get current round number
       const { data: existingRounds } = await supabase
         .from("rounds")
-        .select("round_number")
+        .select("round_number, psychic_id")
         .eq("room_id", gameState.room.id)
         .order("round_number", { ascending: false })
         .limit(1);
@@ -319,47 +307,62 @@ export const useGameState = () => {
         ? existingRounds[0].round_number + 1 
         : 1;
 
-      // Update player roles
-      await supabase
-        .from("players")
-        .update({ role: "psychic" as PlayerRole })
-        .eq("room_id", gameState.room.id)
-        .eq("player_id", playerId);
+      let clueGiverId: string;
+      let guesserId: string;
+      
+      if (existingRounds && existingRounds.length > 0) {
+        const prevClueGiverId = existingRounds[0].psychic_id;
+        if (prevClueGiverId === playerId) {
+          clueGiverId = otherPlayer.player_id;
+          guesserId = playerId;
+        } else {
+          clueGiverId = playerId;
+          guesserId = otherPlayer.player_id;
+        }
+      } else {
+        clueGiverId = playerId;
+        guesserId = otherPlayer.player_id;
+      }
 
       await supabase
         .from("players")
         .update({ role: "guesser" as PlayerRole })
         .eq("room_id", gameState.room.id)
-        .eq("player_id", otherPlayer.player_id);
+        .eq("player_id", guesserId);
 
-      // Create round
-      const { data: round, error: roundError } = await supabase
+      await supabase
+        .from("players")
+        .update({ role: "psychic" as PlayerRole })
+        .eq("room_id", gameState.room.id)
+        .eq("player_id", clueGiverId);
+
+      const { error: roundError } = await supabase
         .from("rounds")
         .insert({
           room_id: gameState.room.id,
           round_number: roundNumber,
-          phase: "psychic_viewing" as GamePhase,
-          psychic_id: playerId,
+          phase: "clue_giving" as GamePhase,
+          psychic_id: clueGiverId,
           target_center: target.center,
           target_width: target.width,
           left_extreme: extremes.left,
           right_extreme: extremes.right,
-          guesser_id: otherPlayer.player_id,
+          guesser_id: guesserId,
         })
         .select()
         .single();
 
       if (roundError) throw roundError;
 
-      // Update room status
       await supabase
         .from("rooms")
         .update({ status: "playing" })
         .eq("id", gameState.room.id);
 
+      const isClueGiver = clueGiverId === playerId;
       toast({
-        title: "Round Started!",
-        description: "You are the Clue Giver. Give a clue!",
+        title: `Round ${roundNumber}`,
+        description: isClueGiver ? "Your turn to give a clue!" : "Get ready to guess!",
       });
     } catch (error) {
       console.error("Error starting round:", error);
@@ -407,7 +410,6 @@ export const useGameState = () => {
       const targetCenter = round.target_center!;
       const targetWidth = round.target_width!;
       
-      // Calculate score immediately (no prediction phase)
       const points = calculateScore(Math.round(guessValue), targetCenter, targetWidth);
       
       await supabase
@@ -420,7 +422,6 @@ export const useGameState = () => {
         })
         .eq("id", gameState.currentRound.id);
 
-      // Update guesser's score
       const guesserPlayer = gameState.players.find(p => p.player_id === round.guesser_id);
       if (guesserPlayer) {
         await supabase
@@ -442,62 +443,6 @@ export const useGameState = () => {
       });
     }
   }, [gameState.currentRound, gameState.room, gameState.players, toast]);
-
-  const predictSide = useCallback(async (side: "left" | "right") => {
-    if (!gameState.currentRound || !gameState.room) return;
-    
-    try {
-      const round = gameState.currentRound;
-      const targetCenter = round.target_center!;
-      const targetWidth = round.target_width!;
-      const guessValue = round.guess_value!;
-      
-      // Calculate score
-      const points = calculateScore(guessValue, targetCenter, targetWidth);
-      const actualSide = getTargetSide(guessValue, targetCenter);
-      const predictionCorrect = actualSide !== "exact" && side === actualSide;
-      
-      // Update round with results
-      await supabase
-        .from("rounds")
-        .update({
-          predicted_side: side,
-          predictor_id: playerId,
-          points_awarded: points,
-          prediction_correct: predictionCorrect,
-          phase: "reveal" as GamePhase,
-          completed_at: new Date().toISOString(),
-        })
-        .eq("id", round.id);
-
-      // Update guesser's score
-      const guesserPlayer = gameState.players.find(p => p.player_id === round.guesser_id);
-      if (guesserPlayer) {
-        await supabase
-          .from("players")
-          .update({ score: guesserPlayer.score + points })
-          .eq("id", guesserPlayer.id);
-      }
-
-      // Update predictor's score if correct
-      if (predictionCorrect) {
-        const predictorPlayer = gameState.players.find(p => p.player_id === playerId);
-        if (predictorPlayer) {
-          await supabase
-            .from("players")
-            .update({ score: predictorPlayer.score + 1 })
-            .eq("id", predictorPlayer.id);
-        }
-      }
-    } catch (error) {
-      console.error("Error predicting side:", error);
-      toast({
-        title: "Error",
-        description: "Failed to submit prediction",
-        variant: "destructive",
-      });
-    }
-  }, [gameState.currentRound, gameState.players, gameState.room, playerId, toast]);
 
   const nextRound = useCallback(async () => {
     if (!gameState.currentRound) return;
@@ -551,7 +496,6 @@ export const useGameState = () => {
     startRound,
     submitClue,
     submitGuess,
-    predictSide,
     nextRound,
     leaveRoom,
   };
