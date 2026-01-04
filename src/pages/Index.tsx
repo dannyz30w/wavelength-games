@@ -24,7 +24,7 @@ const Index = () => {
     <>
       <Helmet>
         <title>Wavelength - Mind Reading Party Game</title>
-        <meta name="description" content="Play Wavelength online! A mind-reading party game where you try to guess where the Psychic's clue falls on the spectrum." />
+        <meta name="description" content="Play Wavelength online! A fun party game where you try to guess where the clue falls on the spectrum." />
       </Helmet>
 
       {isInRoom ? (

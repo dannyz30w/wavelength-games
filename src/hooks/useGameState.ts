@@ -359,7 +359,7 @@ export const useGameState = () => {
 
       toast({
         title: "Round Started!",
-        description: "You are the Psychic. Give a clue!",
+        description: "You are the Clue Giver. Give a clue!",
       });
     } catch (error) {
       console.error("Error starting round:", error);

@@ -72,8 +72,8 @@ export const GameRoom: React.FC<GameRoomProps> = ({
 
   const handleSubmitGuess = async () => {
     // Convert angle to 0-100 scale for scoring
-    // Angle 180 = 0 (left), Angle 0 = 100 (right)
-    const guessValue = ((180 - needleAngle) / 180) * 100;
+    // Angle 0 = 0 (right), Angle 180 = 100 (left)
+    const guessValue = (needleAngle / 180) * 100;
     await onSubmitGuess(guessValue);
   };
 
@@ -82,7 +82,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
   };
 
   // Convert target center from 0-100 to 0-180 degrees
-  const getTargetAngle = (value: number) => 180 - (value / 100) * 180;
+  const getTargetAngle = (value: number) => (value / 100) * 180;
 
   return (
     <div className="min-h-screen flex flex-col p-4 md:p-6">
@@ -339,7 +339,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
               leftLabel={currentRound.left_extreme}
               rightLabel={currentRound.right_extreme}
               targetCenter={currentRound.target_center ? getTargetAngle(currentRound.target_center) : undefined}
-              needleAngle={currentRound.guess_value !== null ? 180 - (currentRound.guess_value / 100) * 180 : 90}
+              needleAngle={currentRound.guess_value !== null ? (currentRound.guess_value / 100) * 180 : 90}
               showReveal={true}
             />
 
