@@ -140,8 +140,6 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{isPlayerClueGiver ? "Clue Giver" : isPlayerGuesser ? "Guesser" : "Ready"}</span>
-                  <span>•</span>
-                  <span className="font-display">{player.score} pts</span>
                 </div>
               </div>
             </div>
@@ -349,12 +347,20 @@ export const GameRoom: React.FC<GameRoomProps> = ({
 
             {/* Results */}
             <div className="glass-panel p-6 space-y-4 animate-reveal">
-              <div className="flex items-center justify-center gap-3">
-                <Trophy className="w-8 h-8 text-warning" />
-                <span className="text-3xl font-display">
-                  {currentRound.points_awarded} Points!
-                </span>
-              </div>
+              {currentRound.points_awarded && currentRound.points_awarded > 0 ? (
+                <div className="flex items-center justify-center gap-3">
+                  <Trophy className="w-8 h-8 text-warning" />
+                  <span className="text-3xl font-display">
+                    {currentRound.points_awarded === 30 ? "Bullseye!" : currentRound.points_awarded === 20 ? "Close!" : "Got it!"}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-3xl font-display text-muted-foreground">
+                    Missed!
+                  </span>
+                </div>
+              )}
 
               <div className="flex justify-center pt-4">
                 <Button
@@ -372,12 +378,6 @@ export const GameRoom: React.FC<GameRoomProps> = ({
         )}
       </div>
 
-      {/* Total Scores */}
-      <div className="mt-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          Total Score: <span className="font-display text-primary">{myPlayer.score}</span>
-        </p>
-      </div>
     </div>
   );
 };
