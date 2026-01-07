@@ -342,13 +342,13 @@ export const generateRoomCode = (): string => {
 
 // Generate a random target
 export const generateTarget = (): { center: number; width: number } => {
-  const width = Math.floor(
-    Math.random() * (GAME_CONSTANTS.MAX_TARGET_WIDTH - GAME_CONSTANTS.MIN_TARGET_WIDTH + 1)
-  ) + GAME_CONSTANTS.MIN_TARGET_WIDTH;
+  const width = 20; // Fixed width, not really used anymore but kept for compatibility
   
-  // Ensure target doesn't go off edges
-  const minCenter = width / 2 + 5;
-  const maxCenter = 100 - width / 2 - 5;
+  // Zone half-width in degrees: 3 (red) + 8 (orange) + 10 (yellow) = 21°
+  // Target angle must be between 21° and 159° (180 - 21) to keep zones visible
+  // In 0-100 scale: min = (21/180)*100 ≈ 12, max = (159/180)*100 ≈ 88
+  const minCenter = 15; // Slightly more margin for safety
+  const maxCenter = 85;
   const center = Math.floor(Math.random() * (maxCenter - minCenter + 1)) + minCenter;
   
   return { center, width };
