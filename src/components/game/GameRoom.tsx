@@ -122,30 +122,38 @@ export const GameRoom: React.FC<GameRoomProps> = ({
   const getTargetAngle = (value: number) => (value / 100) * 180;
 
   const getResultMessage = (points: number | null | undefined) => {
-    if (!points || points === 0) return { text: "Missed!", icon: "💨" };
-    if (points === 30) return { text: "Bullseye!", icon: "🎯" };
-    if (points === 20) return { text: "So Close!", icon: "🔥" };
-    return { text: "Nice!", icon: "✨" };
+    if (!points || points === 0) return { text: "Missed!", color: "text-muted-foreground" };
+    if (points === 30) return { text: "Bullseye!", color: "text-success" };
+    if (points === 20) return { text: "So Close!", color: "text-warning" };
+    return { text: "Nice!", color: "text-primary" };
   };
+
+  // Auto-advance to next round after reveal
+  useEffect(() => {
+    if (currentRound?.phase === "reveal") {
+      const timer = setTimeout(() => {
+        onNextRound();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentRound?.phase, onNextRound]);
 
   return (
     <div className="min-h-screen flex flex-col p-4 md:p-6">
-      {/* Confetti effect */}
+      {/* Confetti effect - using particles instead of emojis */}
       {showConfetti && (
         <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-          {[...Array(20)].map((_, i) => (
+          {[...Array(30)].map((_, i) => (
             <div
               key={i}
-              className="absolute animate-confetti"
+              className="absolute w-3 h-3 rounded-full animate-confetti"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: "50%",
                 animationDelay: `${Math.random() * 0.3}s`,
-                fontSize: "24px",
+                background: `hsl(${Math.random() * 360}, 80%, 60%)`,
               }}
-            >
-              {["🎉", "⭐", "✨", "🎊"][Math.floor(Math.random() * 4)]}
-            </div>
+            />
           ))}
         </div>
       )}
@@ -419,42 +427,43 @@ export const GameRoom: React.FC<GameRoomProps> = ({
             />
 
             {/* Results */}
-            <div className="game-card p-6 text-center space-y-4 animate-pop">
-              {currentRound.points_awarded && currentRound.points_awarded > 0 ? (
-                <div className="flex flex-col items-center gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="icon-container icon-container-primary w-14 h-14 rounded-2xl animate-wiggle">
-                      <Trophy className="w-8 h-8" />
-                    </div>
-                    <div className="text-left">
-                      <span className="text-3xl font-bold block">
-                        {getResultMessage(currentRound.points_awarded).text}
+            <div className="game-card p-6 text-center space-y-3 animate-pop">
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "icon-container w-14 h-14 rounded-2xl animate-wiggle",
+                    currentRound.points_awarded && currentRound.points_awarded > 0 
+                      ? "icon-container-primary" 
+                      : "icon-container-muted"
+                  )}>
+                    {currentRound.points_awarded && currentRound.points_awarded > 0 
+                      ? <Trophy className="w-8 h-8" />
+                      : <Target className="w-8 h-8" />
+                    }
+                  </div>
+                  <div className="text-left">
+                    <span className={cn(
+                      "text-3xl font-bold block",
+                      getResultMessage(currentRound.points_awarded).color
+                    )}>
+                      {getResultMessage(currentRound.points_awarded).text}
+                    </span>
+                    {showScores && currentRound.points_awarded && currentRound.points_awarded > 0 && (
+                      <span className="text-primary font-semibold">
+                        +{currentRound.points_awarded} points
                       </span>
-                      {showScores && (
-                        <span className="text-primary font-semibold">
-                          +{currentRound.points_awarded} points
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <div className="flex items-center justify-center gap-3">
-                  <span className="text-4xl">{getResultMessage(0).icon}</span>
-                  <span className="text-2xl font-bold text-muted-foreground">
-                    {getResultMessage(0).text}
-                  </span>
-                </div>
-              )}
+              </div>
 
-              <Button
-                className="game-button h-12 px-8"
-                onClick={handleNextRound}
-                disabled={isLoading}
-              >
-                Next Round
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+              {/* Auto-advance timer indicator */}
+              <div className="pt-2">
+                <div className="h-1 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-primary animate-timer-bar" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">Next round starting...</p>
+              </div>
             </div>
           </div>
         )}

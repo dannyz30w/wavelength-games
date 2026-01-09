@@ -304,6 +304,15 @@
   }
 }
 
+@keyframes timer-bar {
+  0% { width: 100%; }
+  100% { width: 0%; }
+}
+
+.animate-timer-bar {
+  animation: timer-bar 3s linear forwards;
+}
+
 @keyframes confetti {
   0% {
     transform: translateY(0) rotate(0deg) scale(1);
