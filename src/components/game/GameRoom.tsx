@@ -13,9 +13,10 @@ import {
   ArrowRight,
   Check,
   Trophy,
-  Zap,
+  Sparkles,
   Copy,
-  EyeOff
+  EyeOff,
+  Zap
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
@@ -47,15 +48,30 @@ export const GameRoom: React.FC<GameRoomProps> = ({
   const [clue, setClue] = useState("");
   const [needleAngle, setNeedleAngle] = useState(90);
   const [targetHidden, setTargetHidden] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   
   const { room, players, currentRound, myPlayer } = gameState;
   
-  // Play sound on phase changes
+  // Reset targetHidden when round changes
+  useEffect(() => {
+    setTargetHidden(false);
+    setNeedleAngle(90);
+  }, [currentRound?.id]);
+  
+  // Play sound and show effects on phase changes
   useEffect(() => {
     if (currentRound?.phase === "reveal") {
       playSound("reveal");
+      if (currentRound.points_awarded && currentRound.points_awarded > 0) {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 1500);
+      }
+    } else if (currentRound?.phase === "guessing") {
+      playSound("whoosh");
+    } else if (currentRound?.phase === "clue_giving") {
+      playSound("sweep");
     }
-  }, [currentRound?.phase, playSound]);
+  }, [currentRound?.phase, currentRound?.points_awarded, playSound]);
   
   if (!room || !myPlayer) return null;
 
@@ -63,10 +79,11 @@ export const GameRoom: React.FC<GameRoomProps> = ({
   const isGuesser = currentRound?.guesser_id === playerId;
   const canStartRound = players.length >= 2;
   const isWaitingPhase = !currentRound || currentRound.phase === "complete" || currentRound.phase === "waiting";
+  const showScores = players.length > 2;
 
   const copyRoomCode = () => {
     navigator.clipboard.writeText(room.code);
-    playSound("click");
+    playSound("pop");
     toast({
       title: "Copied!",
       description: "Room code copied to clipboard",
@@ -93,26 +110,53 @@ export const GameRoom: React.FC<GameRoomProps> = ({
   };
 
   const handleStartRound = async () => {
-    playSound("click");
+    playSound("ding");
     await onStartRound();
   };
 
   const handleNextRound = async () => {
-    playSound("click");
+    playSound("whoosh");
     await onNextRound();
   };
 
   const getTargetAngle = (value: number) => (value / 100) * 180;
 
+  const getResultMessage = (points: number | null | undefined) => {
+    if (!points || points === 0) return { text: "Missed!", icon: "💨" };
+    if (points === 30) return { text: "Bullseye!", icon: "🎯" };
+    if (points === 20) return { text: "So Close!", icon: "🔥" };
+    return { text: "Nice!", icon: "✨" };
+  };
+
   return (
     <div className="min-h-screen flex flex-col p-4 md:p-6">
+      {/* Confetti effect */}
+      {showConfetti && (
+        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-confetti"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: "50%",
+                animationDelay: `${Math.random() * 0.3}s`,
+                fontSize: "24px",
+              }}
+            >
+              {["🎉", "⭐", "✨", "🎊"][Math.floor(Math.random() * 4)]}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Header */}
-      <header className="flex items-center justify-between mb-6">
+      <header className="flex items-center justify-between mb-6 animate-slide-down">
         <Button 
           variant="ghost" 
           size="sm" 
           onClick={onLeaveRoom}
-          className="text-muted-foreground hover:text-foreground"
+          className="game-button-ghost text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Leave
@@ -120,7 +164,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
         
         <button
           onClick={copyRoomCode}
-          className="glass-card flex items-center gap-2 px-4 py-2.5 hover:bg-muted/30 transition-all active:scale-95"
+          className="game-card flex items-center gap-2 px-4 py-2.5 hover:border-primary/50 active:scale-95 transition-spring"
         >
           <span className="text-lg font-bold tracking-widest">{room.code}</span>
           <Copy className="w-4 h-4 text-muted-foreground" />
@@ -131,7 +175,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
 
       {/* Players */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-        {players.map((player) => {
+        {players.map((player, index) => {
           const isPlayerClueGiver = currentRound?.psychic_id === player.player_id;
           const isPlayerGuesser = currentRound?.guesser_id === player.player_id;
           const isMe = player.player_id === playerId;
@@ -139,24 +183,25 @@ export const GameRoom: React.FC<GameRoomProps> = ({
             <div
               key={player.id}
               className={cn(
-                "glass-card p-4 flex items-center gap-3 transition-all",
-                isMe && "ring-2 ring-primary/50"
+                "game-card p-4 flex items-center gap-3 animate-slide-up",
+                isMe && "game-card-active",
+                `stagger-${index + 1}`
               )}
             >
               <div className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                "icon-container w-10 h-10 rounded-xl transition-all duration-300",
                 isPlayerClueGiver 
-                  ? "bg-gradient-to-br from-secondary to-accent" 
+                  ? "icon-container-secondary animate-pop" 
                   : isPlayerGuesser
-                  ? "bg-gradient-to-br from-primary to-secondary"
-                  : "bg-muted"
+                  ? "icon-container-primary animate-pop"
+                  : "icon-container-muted"
               )}>
                 {isPlayerClueGiver ? (
-                  <Eye className="w-5 h-5 text-white" />
+                  <Eye className="w-5 h-5" />
                 ) : isPlayerGuesser ? (
-                  <Target className="w-5 h-5 text-white" />
+                  <Target className="w-5 h-5" />
                 ) : (
-                  <Users className="w-5 h-5 text-muted-foreground" />
+                  <Users className="w-5 h-5" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
@@ -164,8 +209,13 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                   <span className="font-semibold text-sm truncate">{player.name}</span>
                   {player.is_host && <Crown className="w-3.5 h-3.5 text-warning flex-shrink-0" />}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {isPlayerClueGiver ? "Clue Giver" : isPlayerGuesser ? "Guesser" : "Ready"}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {isPlayerClueGiver ? "Clue Giver" : isPlayerGuesser ? "Guesser" : "Ready"}
+                  </span>
+                  {showScores && (
+                    <span className="text-xs font-bold text-primary">{player.score} pts</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -173,7 +223,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
         })}
         
         {players.length < 2 && (
-          <div className="glass-card p-4 flex items-center justify-center border-dashed border-2 border-border/30">
+          <div className="game-card p-4 flex items-center justify-center border-dashed border-2 border-border animate-pulse-soft">
             <span className="text-muted-foreground text-sm">Waiting...</span>
           </div>
         )}
@@ -183,15 +233,15 @@ export const GameRoom: React.FC<GameRoomProps> = ({
       <div className="flex-1 flex flex-col items-center justify-center">
         {/* Waiting for players */}
         {isWaitingPhase && (
-          <div className="text-center space-y-6 animate-fade-in">
+          <div className="text-center space-y-6 animate-bounce-in">
             {players.length < 2 ? (
               <>
-                <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
-                  <Users className="w-10 h-10 text-muted-foreground" />
+                <div className="icon-container icon-container-muted w-20 h-20 mx-auto rounded-3xl animate-float">
+                  <Users className="w-10 h-10" />
                 </div>
                 <div>
-                  <p className="text-lg font-medium mb-2">
-                    Waiting for another player
+                  <p className="text-xl font-semibold mb-2">
+                    Waiting for player
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Share code: <span className="font-bold text-primary">{room.code}</span>
@@ -200,12 +250,12 @@ export const GameRoom: React.FC<GameRoomProps> = ({
               </>
             ) : canStartRound ? (
               <>
-                <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center animate-pulse">
-                  <Zap className="w-10 h-10 text-white" />
+                <div className="icon-container icon-container-primary w-20 h-20 mx-auto rounded-3xl animate-pulse-soft">
+                  <Zap className="w-10 h-10" />
                 </div>
-                <p className="text-lg font-medium">Ready to play!</p>
+                <p className="text-xl font-semibold">Ready to play!</p>
                 <Button
-                  className="ios-button h-14 px-10 text-base"
+                  className="game-button h-14 px-10 text-base"
                   onClick={handleStartRound}
                   disabled={isLoading}
                 >
@@ -214,8 +264,8 @@ export const GameRoom: React.FC<GameRoomProps> = ({
               </>
             ) : (
               <>
-                <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
-                  <Zap className="w-10 h-10 text-muted-foreground" />
+                <div className="icon-container icon-container-muted w-20 h-20 mx-auto rounded-3xl animate-float">
+                  <Zap className="w-10 h-10" />
                 </div>
                 <p className="text-lg text-muted-foreground">
                   Waiting for host to start...
@@ -227,12 +277,12 @@ export const GameRoom: React.FC<GameRoomProps> = ({
 
         {/* Clue Giving Phase */}
         {currentRound?.phase === "clue_giving" && (
-          <div className="w-full max-w-md space-y-6 animate-fade-in">
+          <div className="w-full max-w-md space-y-6 animate-slide-up">
             {isClueGiver ? (
               <>
                 <div className="text-center mb-4">
-                  <span className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-secondary/20 to-accent/20 rounded-full text-sm font-medium">
-                    <Eye className="w-4 h-4" />
+                  <span className="game-badge game-badge-secondary">
+                    <Eye className="w-3.5 h-3.5" />
                     You're giving the clue
                   </span>
                 </div>
@@ -245,7 +295,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                 />
                 
                 {!targetHidden ? (
-                  <div className="space-y-4">
+                  <div className="space-y-4 animate-slide-up">
                     <p className="text-center text-muted-foreground text-sm">
                       Give a clue that hints at where the target is
                     </p>
@@ -256,10 +306,10 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                         placeholder="Enter your clue..."
                         maxLength={100}
                         onKeyDown={(e) => e.key === "Enter" && clue.trim() && handleSubmitClue()}
-                        className="flex-1 h-12 bg-input/50 border-border/50 rounded-xl"
+                        className="game-input flex-1 h-12"
                       />
                       <Button
-                        className="ios-button h-12 px-5"
+                        className="game-button h-12 px-5"
                         onClick={handleSubmitClue}
                         disabled={!clue.trim() || isLoading}
                       >
@@ -271,7 +321,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                         variant="ghost"
                         size="sm"
                         onClick={handleHideTarget}
-                        className="text-muted-foreground"
+                        className="game-button-ghost text-muted-foreground"
                       >
                         <EyeOff className="w-4 h-4 mr-2" />
                         Hide Target
@@ -279,7 +329,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center space-y-4">
+                  <div className="text-center space-y-4 animate-slide-up">
                     <p className="text-muted-foreground text-sm">Target hidden. Enter your clue:</p>
                     <div className="flex gap-2">
                       <Input
@@ -288,10 +338,10 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                         placeholder="Enter your clue..."
                         maxLength={100}
                         onKeyDown={(e) => e.key === "Enter" && clue.trim() && handleSubmitClue()}
-                        className="flex-1 h-12 bg-input/50 border-border/50 rounded-xl"
+                        className="game-input flex-1 h-12"
                       />
                       <Button
-                        className="ios-button h-12 px-5"
+                        className="game-button h-12 px-5"
                         onClick={handleSubmitClue}
                         disabled={!clue.trim() || isLoading}
                       >
@@ -302,11 +352,11 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                 )}
               </>
             ) : (
-              <div className="text-center space-y-4">
-                <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-secondary to-accent flex items-center justify-center animate-pulse">
-                  <Eye className="w-10 h-10 text-white" />
+              <div className="text-center space-y-4 animate-bounce-in">
+                <div className="icon-container icon-container-secondary w-20 h-20 mx-auto rounded-3xl animate-pulse-soft">
+                  <Eye className="w-10 h-10" />
                 </div>
-                <p className="text-lg font-medium">Waiting for clue...</p>
+                <p className="text-xl font-semibold">Waiting for clue...</p>
                 <p className="text-muted-foreground text-sm">Get ready to guess!</p>
               </div>
             )}
@@ -315,10 +365,10 @@ export const GameRoom: React.FC<GameRoomProps> = ({
 
         {/* Guessing Phase */}
         {currentRound?.phase === "guessing" && (
-          <div className="w-full max-w-md space-y-6 animate-fade-in">
-            <div className="text-center glass-card p-4">
+          <div className="w-full max-w-md space-y-6 animate-slide-up">
+            <div className="text-center game-card p-4">
               <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">The clue is</p>
-              <p className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              <p className="text-2xl font-bold text-primary">
                 "{currentRound.clue}"
               </p>
             </div>
@@ -332,12 +382,12 @@ export const GameRoom: React.FC<GameRoomProps> = ({
             />
 
             {isGuesser ? (
-              <div className="text-center space-y-4">
+              <div className="text-center space-y-4 animate-slide-up">
                 <p className="text-muted-foreground text-sm">
                   Drag the needle to where you think the target is
                 </p>
                 <Button
-                  className="ios-button h-14 px-10 text-base"
+                  className="game-button h-14 px-10 text-base"
                   onClick={handleSubmitGuess}
                   disabled={isLoading}
                 >
@@ -346,7 +396,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                 </Button>
               </div>
             ) : (
-              <p className="text-center text-muted-foreground text-sm">
+              <p className="text-center text-muted-foreground text-sm animate-pulse-soft">
                 Waiting for the guesser...
               </p>
             )}
@@ -355,8 +405,8 @@ export const GameRoom: React.FC<GameRoomProps> = ({
 
         {/* Reveal Phase */}
         {currentRound?.phase === "reveal" && (
-          <div className="w-full max-w-md space-y-6 animate-fade-in">
-            <div className="text-center glass-card p-3">
+          <div className="w-full max-w-md space-y-6 animate-bounce-in">
+            <div className="text-center game-card p-3">
               <p className="text-sm text-muted-foreground">Clue: "{currentRound.clue}"</p>
             </div>
 
@@ -369,24 +419,36 @@ export const GameRoom: React.FC<GameRoomProps> = ({
             />
 
             {/* Results */}
-            <div className="glass-card p-6 text-center space-y-4">
+            <div className="game-card p-6 text-center space-y-4 animate-pop">
               {currentRound.points_awarded && currentRound.points_awarded > 0 ? (
-                <div className="flex items-center justify-center gap-3">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-warning to-orange-500 flex items-center justify-center">
-                    <Trophy className="w-8 h-8 text-white" />
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="icon-container icon-container-primary w-14 h-14 rounded-2xl animate-wiggle">
+                      <Trophy className="w-8 h-8" />
+                    </div>
+                    <div className="text-left">
+                      <span className="text-3xl font-bold block">
+                        {getResultMessage(currentRound.points_awarded).text}
+                      </span>
+                      {showScores && (
+                        <span className="text-primary font-semibold">
+                          +{currentRound.points_awarded} points
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-3xl font-bold">
-                    {currentRound.points_awarded === 30 ? "Bullseye!" : currentRound.points_awarded === 20 ? "Close!" : "Got it!"}
-                  </span>
                 </div>
               ) : (
-                <p className="text-2xl font-bold text-muted-foreground">
-                  Missed!
-                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-4xl">{getResultMessage(0).icon}</span>
+                  <span className="text-2xl font-bold text-muted-foreground">
+                    {getResultMessage(0).text}
+                  </span>
+                </div>
               )}
 
               <Button
-                className="ios-button h-12 px-8"
+                className="game-button h-12 px-8"
                 onClick={handleNextRound}
                 disabled={isLoading}
               >
