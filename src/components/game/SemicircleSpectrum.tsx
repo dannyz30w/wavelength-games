@@ -166,49 +166,18 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
         onKeyDown={handleKeyDown}
       >
         <svg viewBox="0 0 400 215" className="w-full">
-          <defs>
-            <linearGradient id="spectrumGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="hsl(210, 100%, 60%)" />
-              <stop offset="50%" stopColor="hsl(280, 80%, 60%)" />
-              <stop offset="100%" stopColor="hsl(330, 90%, 65%)" />
-            </linearGradient>
-            <filter id="glowFilter">
-              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-            <filter id="softGlow">
-              <feGaussianBlur stdDeviation="2" result="blur"/>
-              <feMerge>
-                <feMergeNode in="blur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-          </defs>
-          
-          {/* Background semicircle with gradient */}
+          {/* Background semicircle - clean solid color */}
           <path
             d={describePieSlice(0, 180, radius)}
-            fill="url(#spectrumGradient)"
-            opacity="0.15"
-          />
-          
-          {/* Glass-like inner area */}
-          <path
-            d={describePieSlice(0, 180, radius - 8)}
-            fill="hsl(240, 10%, 12%)"
-            opacity="0.6"
+            fill="hsl(240 8% 12%)"
           />
           
           {/* Outer arc border */}
           <path
             d={`M ${200 - radius} 200 A ${radius} ${radius} 0 0 1 ${200 + radius} 200`}
             fill="none"
-            stroke="url(#spectrumGradient)"
+            stroke="hsl(240 8% 20%)"
             strokeWidth="3"
-            opacity="0.6"
           />
           
           {/* Base line */}
@@ -217,61 +186,57 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
             y1="200" 
             x2={200 + radius} 
             y2="200" 
-            stroke="hsl(240, 10%, 25%)" 
+            stroke="hsl(240 8% 22%)" 
             strokeWidth="2" 
           />
 
-          {/* Target zone */}
+          {/* Target zone - only show when showTarget or showReveal is true and targetCenter exists */}
           {(showTarget || showReveal) && targetCenter !== undefined && (
-            <g className={cn(showReveal && "animate-scale-in")} filter="url(#softGlow)">
-              {/* Yellow outer */}
+            <g className={cn(showReveal && "animate-pop")}>
+              {/* Yellow outer zones */}
               <path
                 d={describePieSlice(
-                  targetCenter - redWidth/2 - orangeWidth - yellowWidth, 
-                  targetCenter - redWidth/2 - orangeWidth, 
-                  radius - 10
+                  Math.max(0, targetCenter - redWidth/2 - orangeWidth - yellowWidth), 
+                  Math.max(0, targetCenter - redWidth/2 - orangeWidth), 
+                  radius - 8
                 )}
-                fill="hsl(50, 100%, 50%)"
-                opacity="0.9"
+                fill="hsl(45, 100%, 50%)"
               />
               <path
                 d={describePieSlice(
-                  targetCenter + redWidth/2 + orangeWidth, 
-                  targetCenter + redWidth/2 + orangeWidth + yellowWidth, 
-                  radius - 10
+                  Math.min(180, targetCenter + redWidth/2 + orangeWidth), 
+                  Math.min(180, targetCenter + redWidth/2 + orangeWidth + yellowWidth), 
+                  radius - 8
                 )}
-                fill="hsl(50, 100%, 50%)"
-                opacity="0.9"
+                fill="hsl(45, 100%, 50%)"
               />
               
-              {/* Orange band */}
+              {/* Orange middle zones */}
               <path
                 d={describePieSlice(
-                  targetCenter - redWidth/2 - orangeWidth, 
-                  targetCenter - redWidth/2, 
-                  radius - 10
+                  Math.max(0, targetCenter - redWidth/2 - orangeWidth), 
+                  Math.max(0, targetCenter - redWidth/2), 
+                  radius - 8
                 )}
-                fill="hsl(30, 100%, 55%)"
-                opacity="0.95"
+                fill="hsl(25, 95%, 55%)"
               />
               <path
                 d={describePieSlice(
-                  targetCenter + redWidth/2, 
-                  targetCenter + redWidth/2 + orangeWidth, 
-                  radius - 10
+                  Math.min(180, targetCenter + redWidth/2), 
+                  Math.min(180, targetCenter + redWidth/2 + orangeWidth), 
+                  radius - 8
                 )}
-                fill="hsl(30, 100%, 55%)"
-                opacity="0.95"
+                fill="hsl(25, 95%, 55%)"
               />
               
-              {/* Red center */}
+              {/* Red center zone */}
               <path
                 d={describePieSlice(
-                  targetCenter - redWidth/2, 
-                  targetCenter + redWidth/2, 
-                  radius - 10
+                  Math.max(0, targetCenter - redWidth/2), 
+                  Math.min(180, targetCenter + redWidth/2), 
+                  radius - 8
                 )}
-                fill="hsl(0, 80%, 55%)"
+                fill="hsl(0, 75%, 50%)"
               />
             </g>
           )}
@@ -291,14 +256,14 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
                 y2={200 - outer * Math.sin(rad)}
                 stroke="hsl(0, 0%, 100%)"
                 strokeWidth={i % 2 === 0 ? 2 : 1}
-                opacity={0.2}
+                opacity={0.15}
               />
             );
           })}
 
           {/* Needle */}
           {(isDraggable || needleAngle !== undefined) && (
-            <g filter="url(#glowFilter)">
+            <g>
               {/* Needle line */}
               <line
                 x1="200"
@@ -308,15 +273,15 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
                 stroke="hsl(0, 0%, 100%)"
                 strokeWidth="4"
                 strokeLinecap="round"
-                className={cn(!isDragging && "transition-all duration-150 ease-out")}
+                className={cn(!isDragging && "transition-all duration-200 ease-out")}
               />
               
               {/* Needle base */}
               <circle
                 cx="200"
                 cy="200"
-                r="10"
-                fill="hsl(240, 10%, 15%)"
+                r="12"
+                fill="hsl(240 8% 10%)"
                 stroke="hsl(0, 0%, 100%)"
                 strokeWidth="3"
               />
@@ -325,10 +290,10 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
               <circle
                 cx={200 + needleLength * Math.cos(needleRad)}
                 cy={200 - needleLength * Math.sin(needleRad)}
-                r="8"
+                r="10"
                 fill="hsl(0, 0%, 100%)"
                 className={cn(
-                  !isDragging && "transition-all duration-150 ease-out",
+                  !isDragging && "transition-all duration-200 ease-out",
                   isDraggable && "cursor-grab active:cursor-grabbing"
                 )}
               />
@@ -338,17 +303,17 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
       </div>
 
       {/* Labels */}
-      <div className="flex justify-between mt-3 px-2">
-        <span className="text-sm font-semibold text-muted-foreground max-w-[120px] text-left">
+      <div className="flex justify-between mt-4 px-2">
+        <span className="text-sm font-semibold text-muted-foreground max-w-[140px] text-left leading-tight">
           {leftLabel}
         </span>
-        <span className="text-sm font-semibold text-muted-foreground max-w-[120px] text-right">
+        <span className="text-sm font-semibold text-muted-foreground max-w-[140px] text-right leading-tight">
           {rightLabel}
         </span>
       </div>
 
       {isDraggable && (
-        <p className="text-xs text-muted-foreground mt-2 text-center">
+        <p className="text-xs text-muted-foreground mt-3 text-center">
           Drag or tap to position
         </p>
       )}

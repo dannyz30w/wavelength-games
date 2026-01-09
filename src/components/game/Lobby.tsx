@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Users, Plus, ArrowRight, Zap } from "lucide-react";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
+import { cn } from "@/lib/utils";
 
 interface LobbyProps {
   onCreateRoom: (name: string, isPrivate: boolean) => Promise<string | null>;
@@ -37,7 +38,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   };
 
   const handleModeChange = (newMode: "initial" | "create" | "join") => {
-    playSound("click");
+    playSound("pop");
     setMode(newMode);
   };
 
@@ -45,26 +46,26 @@ export const Lobby: React.FC<LobbyProps> = ({
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="text-center mb-10 animate-fade-in">
-          <div className="inline-flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
-              <Zap className="w-7 h-7 text-primary-foreground" />
+        <div className="text-center mb-10 animate-bounce-in">
+          <div className="inline-flex items-center gap-3 mb-4">
+            <div className="icon-container icon-container-primary w-14 h-14 rounded-2xl">
+              <Zap className="w-8 h-8" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+          <h1 className="text-4xl font-extrabold tracking-tight text-foreground mb-2">
             Wavelength
           </h1>
-          <p className="text-muted-foreground text-sm mt-2 font-medium">
+          <p className="text-muted-foreground text-sm font-medium">
             Read minds. Score points.
           </p>
         </div>
 
         {/* Main Panel */}
-        <div className="glass-panel p-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+        <div className="game-card p-6 animate-slide-up stagger-1">
           {mode === "initial" && (
             <div className="space-y-3">
               <Button
-                className="ios-button w-full h-14 text-base"
+                className="game-button w-full h-14 text-base"
                 onClick={() => handleModeChange("create")}
               >
                 <Plus className="w-5 h-5 mr-2" />
@@ -72,8 +73,7 @@ export const Lobby: React.FC<LobbyProps> = ({
               </Button>
               
               <Button
-                variant="outline"
-                className="w-full h-14 text-base glass-card border-0"
+                className="game-button-ghost w-full h-14 text-base bg-muted"
                 onClick={() => handleModeChange("join")}
               >
                 <Users className="w-5 h-5 mr-2" />
@@ -83,7 +83,7 @@ export const Lobby: React.FC<LobbyProps> = ({
           )}
 
           {mode === "create" && (
-            <div className="space-y-5">
+            <div className="space-y-5 animate-slide-up">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                   Your Name
@@ -94,7 +94,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                   placeholder="Enter your name"
                   maxLength={20}
                   autoFocus
-                  className="h-12 text-base bg-input/50 border-border/50 rounded-xl"
+                  className="game-input h-12 text-base"
                 />
               </div>
 
@@ -107,22 +107,19 @@ export const Lobby: React.FC<LobbyProps> = ({
                     playSound("click");
                     setIsPrivate(!isPrivate);
                   }}
-                  className={`
-                    relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full 
-                    transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 
-                    focus-visible:ring-primary focus-visible:ring-offset-2
-                    ${isPrivate 
-                      ? "bg-gradient-to-r from-primary to-secondary" 
-                      : "bg-muted"
-                    }
-                  `}
+                  className={cn(
+                    "relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full",
+                    "transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
+                    "focus-visible:ring-primary focus-visible:ring-offset-2",
+                    isPrivate ? "bg-primary" : "bg-muted"
+                  )}
                 >
                   <span
-                    className={`
-                      pointer-events-none block h-6 w-6 rounded-full bg-white shadow-lg 
-                      ring-0 transition-transform duration-300 mt-1
-                      ${isPrivate ? "translate-x-7" : "translate-x-1"}
-                    `}
+                    className={cn(
+                      "pointer-events-none block h-6 w-6 rounded-full bg-white shadow-lg",
+                      "ring-0 transition-transform duration-300 mt-1",
+                      isPrivate ? "translate-x-7" : "translate-x-1"
+                    )}
                   />
                 </button>
                 <span className="text-sm font-medium">
@@ -133,13 +130,13 @@ export const Lobby: React.FC<LobbyProps> = ({
               <div className="flex gap-3 pt-2">
                 <Button
                   variant="ghost"
-                  className="flex-1 h-12"
+                  className="game-button-ghost flex-1 h-12"
                   onClick={() => handleModeChange("initial")}
                 >
                   Back
                 </Button>
                 <Button
-                  className="ios-button flex-[2] h-12"
+                  className="game-button flex-[2] h-12"
                   onClick={handleCreate}
                   disabled={!playerName.trim() || isLoading}
                 >
@@ -151,7 +148,7 @@ export const Lobby: React.FC<LobbyProps> = ({
           )}
 
           {mode === "join" && (
-            <div className="space-y-5">
+            <div className="space-y-5 animate-slide-up">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                   Your Name
@@ -162,7 +159,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                   placeholder="Enter your name"
                   maxLength={20}
                   autoFocus
-                  className="h-12 text-base bg-input/50 border-border/50 rounded-xl"
+                  className="game-input h-12 text-base"
                 />
               </div>
 
@@ -175,20 +172,20 @@ export const Lobby: React.FC<LobbyProps> = ({
                   onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                   placeholder="XXXX"
                   maxLength={4}
-                  className="h-14 text-center text-2xl tracking-[0.4em] uppercase bg-input/50 border-border/50 rounded-xl font-mono"
+                  className="game-input h-14 text-center text-2xl tracking-[0.4em] uppercase font-mono"
                 />
               </div>
 
               <div className="flex gap-3 pt-2">
                 <Button
                   variant="ghost"
-                  className="flex-1 h-12"
+                  className="game-button-ghost flex-1 h-12"
                   onClick={() => handleModeChange("initial")}
                 >
                   Back
                 </Button>
                 <Button
-                  className="ios-button flex-[2] h-12"
+                  className="game-button flex-[2] h-12"
                   onClick={handleJoin}
                   disabled={!playerName.trim() || !roomCode.trim() || isLoading}
                 >
@@ -201,8 +198,8 @@ export const Lobby: React.FC<LobbyProps> = ({
         </div>
 
         {/* Footer */}
-        <p className="text-center text-muted-foreground text-xs mt-6 animate-fade-in font-medium" style={{ animationDelay: "0.2s" }}>
-          A mind-reading game for 2 players
+        <p className="text-center text-muted-foreground text-xs mt-6 animate-slide-up stagger-2 font-medium">
+          A mind-reading game for 2+ players
         </p>
       </div>
     </div>
