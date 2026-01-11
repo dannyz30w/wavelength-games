@@ -2,79 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @layer base {
   :root {
-    /* Clean dark theme - no gradients */
-    --background: 240 12% 5%;
-    --foreground: 0 0% 96%;
+    /* Deep space dark theme */
+    --background: 235 15% 6%;
+    --foreground: 0 0% 98%;
 
-    --card: 240 10% 8%;
-    --card-foreground: 0 0% 96%;
+    --card: 235 12% 9%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 240 10% 8%;
-    --popover-foreground: 0 0% 96%;
+    --popover: 235 12% 9%;
+    --popover-foreground: 0 0% 98%;
 
-    /* Electric blue primary */
-    --primary: 215 95% 58%;
+    /* Vibrant electric blue */
+    --primary: 210 100% 55%;
     --primary-foreground: 0 0% 100%;
 
-    /* Vivid purple secondary */
-    --secondary: 270 85% 60%;
+    /* Vivid violet */
+    --secondary: 265 90% 62%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Soft gray muted */
-    --muted: 240 8% 14%;
-    --muted-foreground: 240 5% 50%;
+    /* Soft muted */
+    --muted: 235 10% 15%;
+    --muted-foreground: 235 8% 55%;
 
-    /* Hot pink accent */
-    --accent: 335 85% 60%;
+    /* Hot coral accent */
+    --accent: 15 95% 60%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 75% 55%;
+    --destructive: 0 80% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 8% 18%;
-    --input: 240 8% 12%;
-    --ring: 215 95% 58%;
+    --border: 235 10% 20%;
+    --input: 235 10% 12%;
+    --ring: 210 100% 55%;
 
     --radius: 1rem;
 
     /* Game colors */
-    --success: 155 80% 45%;
-    --warning: 40 95% 55%;
+    --success: 160 85% 45%;
+    --warning: 45 100% 55%;
 
-    --sidebar-background: 240 12% 6%;
-    --sidebar-foreground: 0 0% 96%;
-    --sidebar-primary: 215 95% 58%;
+    --sidebar-background: 235 15% 7%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 210 100% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 270 85% 60%;
+    --sidebar-accent: 265 90% 62%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 240 8% 18%;
-    --sidebar-ring: 215 95% 58%;
+    --sidebar-border: 235 10% 20%;
+    --sidebar-ring: 210 100% 55%;
   }
 
   .dark {
-    --background: 240 12% 5%;
-    --foreground: 0 0% 96%;
-    --card: 240 10% 8%;
-    --card-foreground: 0 0% 96%;
-    --popover: 240 10% 8%;
-    --popover-foreground: 0 0% 96%;
-    --primary: 215 95% 58%;
+    --background: 235 15% 6%;
+    --foreground: 0 0% 98%;
+    --card: 235 12% 9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 235 12% 9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 210 100% 55%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 270 85% 60%;
+    --secondary: 265 90% 62%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 240 8% 14%;
-    --muted-foreground: 240 5% 50%;
-    --accent: 335 85% 60%;
+    --muted: 235 10% 15%;
+    --muted-foreground: 235 8% 55%;
+    --accent: 15 95% 60%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 75% 55%;
+    --destructive: 0 80% 55%;
     --destructive-foreground: 0 0% 100%;
-    --border: 240 8% 18%;
-    --input: 240 8% 12%;
-    --ring: 215 95% 58%;
+    --border: 235 10% 20%;
+    --input: 235 10% 12%;
+    --ring: 210 100% 55%;
   }
 }
 
@@ -90,66 +90,99 @@
 }
 
 @layer components {
-  /* Clean card style - no glass effects */
+  /* Enhanced card with subtle depth */
   .game-card {
     @apply bg-card border border-border rounded-2xl;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 20px -4px hsl(0 0% 0% / 0.3), inset 0 1px 0 hsl(0 0% 100% / 0.03);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .game-card:hover {
-    @apply border-primary/30;
+    @apply border-primary/40;
+    box-shadow: 0 8px 32px -8px hsl(var(--primary) / 0.2), inset 0 1px 0 hsl(0 0% 100% / 0.05);
+    transform: translateY(-2px);
   }
 
   .game-card-active {
     @apply bg-card border-2 border-primary rounded-2xl;
-    box-shadow: 0 0 0 4px hsl(var(--primary) / 0.1);
+    box-shadow: 0 0 0 4px hsl(var(--primary) / 0.15), 0 8px 32px -8px hsl(var(--primary) / 0.25);
   }
 
-  /* Clean button style */
+  /* Vibrant button styles */
   .game-button {
-    @apply bg-primary text-primary-foreground font-semibold rounded-xl;
+    @apply bg-primary text-primary-foreground font-bold rounded-xl;
     @apply transition-all duration-200 ease-out;
-    @apply hover:brightness-110 active:scale-[0.98];
-    @apply disabled:opacity-50 disabled:pointer-events-none;
+    box-shadow: 0 4px 16px -4px hsl(var(--primary) / 0.4), inset 0 1px 0 hsl(0 0% 100% / 0.15);
+  }
+
+  .game-button:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 24px -8px hsl(var(--primary) / 0.5), inset 0 1px 0 hsl(0 0% 100% / 0.2);
+  }
+
+  .game-button:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  .game-button:disabled {
+    @apply opacity-50 pointer-events-none;
   }
 
   .game-button-secondary {
-    @apply bg-secondary text-secondary-foreground font-semibold rounded-xl;
+    @apply bg-secondary text-secondary-foreground font-bold rounded-xl;
     @apply transition-all duration-200 ease-out;
-    @apply hover:brightness-110 active:scale-[0.98];
+    box-shadow: 0 4px 16px -4px hsl(var(--secondary) / 0.4);
+  }
+
+  .game-button-secondary:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 24px -8px hsl(var(--secondary) / 0.5);
   }
 
   .game-button-ghost {
-    @apply bg-transparent text-foreground font-medium rounded-xl;
+    @apply bg-transparent text-foreground font-semibold rounded-xl;
     @apply transition-all duration-200 ease-out;
-    @apply hover:bg-muted active:scale-[0.98];
+  }
+
+  .game-button-ghost:hover {
+    @apply bg-muted;
+    transform: translateY(-1px);
+  }
+
+  .game-button-ghost:active {
+    transform: scale(0.98);
   }
 
   /* Badge styles */
   .game-badge {
-    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide;
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider;
     @apply bg-muted text-muted-foreground;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .game-badge-primary {
-    @apply bg-primary/15 text-primary;
+    @apply bg-primary/20 text-primary;
   }
 
   .game-badge-secondary {
-    @apply bg-secondary/15 text-secondary;
+    @apply bg-secondary/20 text-secondary;
   }
 
   .game-badge-accent {
-    @apply bg-accent/15 text-accent;
+    @apply bg-accent/20 text-accent;
   }
 
   /* Input style */
   .game-input {
     @apply bg-input border border-border rounded-xl px-4 py-3;
     @apply text-foreground placeholder:text-muted-foreground;
-    @apply focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary;
-    @apply transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary;
+    @apply transition-all duration-300;
+    box-shadow: inset 0 2px 4px hsl(0 0% 0% / 0.1);
+  }
+
+  .game-input:focus {
+    box-shadow: 0 0 0 4px hsl(var(--primary) / 0.1), inset 0 2px 4px hsl(0 0% 0% / 0.1);
   }
 
   /* Icon container */
@@ -160,10 +193,12 @@
 
   .icon-container-primary {
     @apply bg-primary text-primary-foreground;
+    box-shadow: 0 4px 16px -4px hsl(var(--primary) / 0.4);
   }
 
   .icon-container-secondary {
     @apply bg-secondary text-secondary-foreground;
+    box-shadow: 0 4px 16px -4px hsl(var(--secondary) / 0.4);
   }
 
   .icon-container-muted {
@@ -172,38 +207,42 @@
 }
 
 @layer utilities {
-  /* Transition utilities */
+  /* Spring transitions */
   .transition-spring {
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .transition-smooth {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .transition-bounce {
-    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .transition-elastic {
+    transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 
   /* Animation utilities */
   .animate-bounce-in {
-    animation: bounce-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: bounce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .animate-slide-up {
-    animation: slide-up 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slide-up 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .animate-slide-down {
-    animation: slide-down 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slide-down 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .animate-pop {
-    animation: pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .animate-wiggle {
-    animation: wiggle 0.5s ease-in-out;
+    animation: wiggle 0.6s ease-in-out;
   }
 
   .animate-pulse-soft {
@@ -215,7 +254,23 @@
   }
 
   .animate-confetti {
-    animation: confetti 0.6s ease-out forwards;
+    animation: confetti 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+
+  .animate-glow {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
+
+  .animate-reveal {
+    animation: reveal-expand 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   /* Stagger delays */
@@ -229,48 +284,50 @@
 @keyframes bounce-in {
   0% {
     opacity: 0;
-    transform: scale(0.8);
+    transform: scale(0.7) translateY(20px);
   }
   50% {
-    transform: scale(1.05);
+    transform: scale(1.08) translateY(-5px);
   }
   100% {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) translateY(0);
   }
 }
 
 @keyframes slide-up {
   0% {
     opacity: 0;
-    transform: translateY(24px);
+    transform: translateY(40px) scale(0.95);
   }
   100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes slide-down {
   0% {
     opacity: 0;
-    transform: translateY(-24px);
+    transform: translateY(-40px) scale(0.95);
   }
   100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes pop {
   0% {
-    transform: scale(0.9);
+    transform: scale(0.85);
+    opacity: 0.8;
   }
   50% {
-    transform: scale(1.1);
+    transform: scale(1.15);
   }
   100% {
     transform: scale(1);
+    opacity: 1;
   }
 }
 
@@ -278,29 +335,40 @@
   0%, 100% {
     transform: rotate(0deg);
   }
-  25% {
-    transform: rotate(-5deg);
+  20% {
+    transform: rotate(-8deg);
   }
-  75% {
-    transform: rotate(5deg);
+  40% {
+    transform: rotate(8deg);
+  }
+  60% {
+    transform: rotate(-6deg);
+  }
+  80% {
+    transform: rotate(6deg);
   }
 }
 
 @keyframes pulse-soft {
   0%, 100% {
     opacity: 1;
+    transform: scale(1);
   }
   50% {
-    opacity: 0.7;
+    opacity: 0.85;
+    transform: scale(1.02);
   }
 }
 
 @keyframes float {
   0%, 100% {
-    transform: translateY(0);
+    transform: translateY(0) rotate(0deg);
   }
-  50% {
-    transform: translateY(-8px);
+  33% {
+    transform: translateY(-6px) rotate(1deg);
+  }
+  66% {
+    transform: translateY(-3px) rotate(-1deg);
   }
 }
 
@@ -318,21 +386,54 @@
     transform: translateY(0) rotate(0deg) scale(1);
     opacity: 1;
   }
+  25% {
+    transform: translateY(-60px) rotate(180deg) scale(1.2);
+    opacity: 1;
+  }
   100% {
-    transform: translateY(-100px) rotate(720deg) scale(0);
+    transform: translateY(-120px) rotate(540deg) scale(0);
     opacity: 0;
   }
 }
 
-/* Spectrum colors - flat, vibrant */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px hsl(var(--primary) / 0.5), 0 0 60px hsl(var(--primary) / 0.2);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+@keyframes reveal-expand {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Spectrum colors - vibrant and clear */
 .spectrum-red {
-  fill: hsl(0, 75%, 50%);
+  fill: hsl(0, 85%, 55%);
 }
 
 .spectrum-orange {
-  fill: hsl(25, 95%, 55%);
+  fill: hsl(28, 100%, 55%);
 }
 
 .spectrum-yellow {
-  fill: hsl(45, 100%, 50%);
+  fill: hsl(48, 100%, 55%);
 }

@@ -39,7 +39,7 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
     const dy = centerY - clientY;
     
     let angle = Math.atan2(dy, dx) * (180 / Math.PI);
-    angle = Math.max(5, Math.min(175, angle));
+    angle = Math.max(3, Math.min(177, angle));
     
     return angle;
   }, [localAngle]);
@@ -106,10 +106,10 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
     let newAngle = localAngle;
     switch (e.key) {
       case "ArrowLeft":
-        newAngle = Math.min(180, localAngle + 2);
+        newAngle = Math.min(177, localAngle + 2);
         break;
       case "ArrowRight":
-        newAngle = Math.max(0, localAngle - 2);
+        newAngle = Math.max(3, localAngle - 2);
         break;
       default:
         return;
@@ -140,11 +140,12 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
   };
 
   const needleRad = localAngle * Math.PI / 180;
-  const needleLength = 160;
+  const needleLength = 155;
 
-  const redWidth = 6;
-  const orangeWidth = 8;
-  const yellowWidth = 10;
+  // Smaller zones (3/4 original size)
+  const redWidth = 4;
+  const orangeWidth = 6;
+  const yellowWidth = 8;
   const radius = 175;
 
   return (
@@ -165,19 +166,39 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
         tabIndex={isDraggable ? 0 : undefined}
         onKeyDown={handleKeyDown}
       >
-        <svg viewBox="0 0 400 215" className="w-full">
-          {/* Background semicircle - clean solid color */}
+        <svg viewBox="0 0 400 220" className="w-full">
+          <defs>
+            {/* Glow filters for animations */}
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+            <filter id="strongGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="6" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Background semicircle */}
           <path
             d={describePieSlice(0, 180, radius)}
-            fill="hsl(240 8% 12%)"
+            fill="hsl(240 8% 10%)"
           />
           
-          {/* Outer arc border */}
+          {/* Outer arc border with subtle glow */}
           <path
             d={`M ${200 - radius} 200 A ${radius} ${radius} 0 0 1 ${200 + radius} 200`}
             fill="none"
-            stroke="hsl(240 8% 20%)"
-            strokeWidth="3"
+            stroke="hsl(215 60% 30%)"
+            strokeWidth="2"
+            opacity="0.5"
           />
           
           {/* Base line */}
@@ -186,29 +207,31 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
             y1="200" 
             x2={200 + radius} 
             y2="200" 
-            stroke="hsl(240 8% 22%)" 
+            stroke="hsl(215 40% 25%)" 
             strokeWidth="2" 
           />
 
-          {/* Target zone - only show when showTarget or showReveal is true and targetCenter exists */}
+          {/* Target zone - with enhanced visuals */}
           {(showTarget || showReveal) && targetCenter !== undefined && (
-            <g className={cn(showReveal && "animate-pop")}>
+            <g className={cn(showReveal && "animate-pop")} filter={showReveal ? "url(#glow)" : undefined}>
               {/* Yellow outer zones */}
               <path
                 d={describePieSlice(
                   Math.max(0, targetCenter - redWidth/2 - orangeWidth - yellowWidth), 
                   Math.max(0, targetCenter - redWidth/2 - orangeWidth), 
-                  radius - 8
+                  radius - 6
                 )}
-                fill="hsl(45, 100%, 50%)"
+                fill="hsl(48, 100%, 55%)"
+                className={cn(showReveal && "animate-pulse-soft")}
               />
               <path
                 d={describePieSlice(
                   Math.min(180, targetCenter + redWidth/2 + orangeWidth), 
                   Math.min(180, targetCenter + redWidth/2 + orangeWidth + yellowWidth), 
-                  radius - 8
+                  radius - 6
                 )}
-                fill="hsl(45, 100%, 50%)"
+                fill="hsl(48, 100%, 55%)"
+                className={cn(showReveal && "animate-pulse-soft")}
               />
               
               {/* Orange middle zones */}
@@ -216,36 +239,38 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
                 d={describePieSlice(
                   Math.max(0, targetCenter - redWidth/2 - orangeWidth), 
                   Math.max(0, targetCenter - redWidth/2), 
-                  radius - 8
+                  radius - 6
                 )}
-                fill="hsl(25, 95%, 55%)"
+                fill="hsl(28, 100%, 55%)"
               />
               <path
                 d={describePieSlice(
                   Math.min(180, targetCenter + redWidth/2), 
                   Math.min(180, targetCenter + redWidth/2 + orangeWidth), 
-                  radius - 8
+                  radius - 6
                 )}
-                fill="hsl(25, 95%, 55%)"
+                fill="hsl(28, 100%, 55%)"
               />
               
-              {/* Red center zone */}
+              {/* Red center zone with glow on reveal */}
               <path
                 d={describePieSlice(
                   Math.max(0, targetCenter - redWidth/2), 
                   Math.min(180, targetCenter + redWidth/2), 
-                  radius - 8
+                  radius - 6
                 )}
-                fill="hsl(0, 75%, 50%)"
+                fill="hsl(0, 85%, 55%)"
+                filter={showReveal ? "url(#strongGlow)" : undefined}
               />
             </g>
           )}
 
-          {/* Tick marks */}
-          {[...Array(19)].map((_, i) => {
-            const angle = i * 10;
+          {/* Tick marks with gradient opacity */}
+          {[...Array(37)].map((_, i) => {
+            const angle = i * 5;
             const rad = angle * Math.PI / 180;
-            const inner = radius - 6;
+            const isMajor = i % 4 === 0;
+            const inner = radius - (isMajor ? 10 : 5);
             const outer = radius;
             return (
               <line
@@ -254,17 +279,29 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
                 y1={200 - inner * Math.sin(rad)}
                 x2={200 + outer * Math.cos(rad)}
                 y2={200 - outer * Math.sin(rad)}
-                stroke="hsl(0, 0%, 100%)"
-                strokeWidth={i % 2 === 0 ? 2 : 1}
-                opacity={0.15}
+                stroke="hsl(215, 50%, 70%)"
+                strokeWidth={isMajor ? 2 : 1}
+                opacity={isMajor ? 0.25 : 0.12}
               />
             );
           })}
 
-          {/* Needle */}
+          {/* Needle with enhanced design */}
           {(isDraggable || needleAngle !== undefined) && (
-            <g>
-              {/* Needle line */}
+            <g className={cn(!isDragging && "transition-all duration-300 ease-out")}>
+              {/* Needle shadow */}
+              <line
+                x1="200"
+                y1="202"
+                x2={200 + needleLength * Math.cos(needleRad)}
+                y2={202 - needleLength * Math.sin(needleRad)}
+                stroke="hsl(0, 0%, 0%)"
+                strokeWidth="6"
+                strokeLinecap="round"
+                opacity="0.3"
+              />
+              
+              {/* Needle main line */}
               <line
                 x1="200"
                 y1="200"
@@ -273,48 +310,61 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
                 stroke="hsl(0, 0%, 100%)"
                 strokeWidth="4"
                 strokeLinecap="round"
-                className={cn(!isDragging && "transition-all duration-200 ease-out")}
+                filter={isDragging ? "url(#glow)" : undefined}
               />
               
               {/* Needle base */}
               <circle
                 cx="200"
                 cy="200"
-                r="12"
-                fill="hsl(240 8% 10%)"
+                r="14"
+                fill="hsl(240 8% 8%)"
                 stroke="hsl(0, 0%, 100%)"
                 strokeWidth="3"
               />
+              <circle
+                cx="200"
+                cy="200"
+                r="6"
+                fill="hsl(215, 80%, 60%)"
+              />
               
-              {/* Needle tip */}
+              {/* Needle tip with pulse on drag */}
               <circle
                 cx={200 + needleLength * Math.cos(needleRad)}
                 cy={200 - needleLength * Math.sin(needleRad)}
-                r="10"
+                r={isDragging ? 14 : 11}
                 fill="hsl(0, 0%, 100%)"
                 className={cn(
-                  !isDragging && "transition-all duration-200 ease-out",
+                  "transition-all duration-150",
                   isDraggable && "cursor-grab active:cursor-grabbing"
                 )}
+                filter={isDragging ? "url(#strongGlow)" : undefined}
+              />
+              <circle
+                cx={200 + needleLength * Math.cos(needleRad)}
+                cy={200 - needleLength * Math.sin(needleRad)}
+                r="5"
+                fill="hsl(215, 80%, 60%)"
               />
             </g>
           )}
         </svg>
       </div>
 
-      {/* Labels */}
-      <div className="flex justify-between mt-4 px-2">
-        <span className="text-sm font-semibold text-muted-foreground max-w-[140px] text-left leading-tight">
+      {/* Labels with enhanced styling */}
+      <div className="flex justify-between mt-5 px-1">
+        <span className="text-sm font-bold text-muted-foreground max-w-[140px] text-left leading-tight tracking-tight">
           {leftLabel}
         </span>
-        <span className="text-sm font-semibold text-muted-foreground max-w-[140px] text-right leading-tight">
+        <span className="text-sm font-bold text-muted-foreground max-w-[140px] text-right leading-tight tracking-tight">
           {rightLabel}
         </span>
       </div>
 
       {isDraggable && (
-        <p className="text-xs text-muted-foreground mt-3 text-center">
-          Drag or tap to position
+        <p className="text-xs text-muted-foreground/70 mt-3 text-center tracking-wide">
+          Drag or tap anywhere
         </p>
       )}
     </div>

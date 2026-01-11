@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 
-type SoundType = "click" | "success" | "reveal" | "submit" | "join" | "error" | "whoosh" | "pop" | "ding" | "sweep";
+type SoundType = "click" | "success" | "reveal" | "submit" | "join" | "error" | "whoosh" | "pop" | "ding" | "sweep" | "magic" | "powerup" | "sparkle" | "bounce";
 
 export const useSoundEffects = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -42,7 +42,7 @@ export const useSoundEffects = () => {
     }
   }, [getAudioContext]);
 
-  const playNoise = useCallback((duration: number, volume: number = 0.1) => {
+  const playNoise = useCallback((duration: number, volume: number = 0.1, filterFreq: number = 2000) => {
     try {
       const ctx = getAudioContext();
       const bufferSize = ctx.sampleRate * duration;
@@ -58,7 +58,7 @@ export const useSoundEffects = () => {
       const filter = ctx.createBiquadFilter();
       
       filter.type = "lowpass";
-      filter.frequency.value = 2000;
+      filter.frequency.value = filterFreq;
       
       source.buffer = buffer;
       source.connect(filter);
@@ -74,7 +74,7 @@ export const useSoundEffects = () => {
     }
   }, [getAudioContext]);
 
-  const playFrequencySweep = useCallback((startFreq: number, endFreq: number, duration: number, volume: number = 0.15) => {
+  const playFrequencySweep = useCallback((startFreq: number, endFreq: number, duration: number, volume: number = 0.15, type: OscillatorType = "sine") => {
     try {
       const ctx = getAudioContext();
       const oscillator = ctx.createOscillator();
@@ -83,7 +83,7 @@ export const useSoundEffects = () => {
       oscillator.connect(gainNode);
       gainNode.connect(ctx.destination);
       
-      oscillator.type = "sine";
+      oscillator.type = type;
       oscillator.frequency.setValueAtTime(startFreq, ctx.currentTime);
       oscillator.frequency.exponentialRampToValueAtTime(endFreq, ctx.currentTime + duration);
       
@@ -97,77 +97,125 @@ export const useSoundEffects = () => {
     }
   }, [getAudioContext]);
 
+  const playChord = useCallback((frequencies: number[], duration: number, volume: number = 0.08) => {
+    frequencies.forEach((freq, i) => {
+      setTimeout(() => playTone(freq, duration, "sine", volume), i * 20);
+    });
+  }, [playTone]);
+
   const playSound = useCallback((sound: SoundType) => {
     switch (sound) {
       case "click":
-        // Soft pop click
-        playTone(1200, 0.04, "sine", 0.08);
+        // Crisp click with subtle resonance
+        playTone(2000, 0.03, "sine", 0.06);
+        setTimeout(() => playTone(1500, 0.02, "sine", 0.03), 15);
         break;
         
       case "pop":
-        // Bubble pop
-        playTone(400, 0.08, "sine", 0.15);
-        setTimeout(() => playTone(800, 0.05, "sine", 0.1), 20);
+        // Satisfying bubble pop with depth
+        playTone(600, 0.06, "sine", 0.18);
+        setTimeout(() => playTone(1200, 0.04, "sine", 0.12), 15);
+        setTimeout(() => playTone(800, 0.03, "sine", 0.06), 40);
         break;
         
       case "success":
-        // Triumphant ascending arpeggio
-        playTone(523, 0.12, "triangle", 0.18);
-        setTimeout(() => playTone(659, 0.12, "triangle", 0.2), 80);
-        setTimeout(() => playTone(784, 0.15, "triangle", 0.22), 160);
-        setTimeout(() => playTone(1047, 0.25, "triangle", 0.18), 260);
+        // Epic ascending fanfare
+        playChord([523, 659], 0.15);
+        setTimeout(() => playChord([659, 784], 0.15), 100);
+        setTimeout(() => playChord([784, 988], 0.2), 200);
+        setTimeout(() => playChord([1047, 1319], 0.35), 320);
         break;
         
       case "reveal":
-        // Dramatic reveal with sweep and shimmer
-        playFrequencySweep(200, 600, 0.4, 0.12);
+        // Dramatic magical reveal with shimmer
+        playFrequencySweep(150, 400, 0.3, 0.08, "triangle");
+        playNoise(0.15, 0.04, 4000);
         setTimeout(() => {
-          playTone(523, 0.2, "triangle", 0.15);
-          playTone(659, 0.2, "triangle", 0.12);
-        }, 200);
+          playChord([392, 494, 587], 0.25);
+        }, 150);
         setTimeout(() => {
-          playTone(784, 0.3, "triangle", 0.18);
-          playTone(1047, 0.3, "triangle", 0.1);
-        }, 350);
+          playChord([523, 659, 784], 0.35);
+          playFrequencySweep(600, 1200, 0.2, 0.06);
+        }, 300);
+        setTimeout(() => {
+          playTone(1047, 0.4, "sine", 0.12);
+          playTone(1319, 0.4, "sine", 0.08);
+        }, 450);
         break;
         
       case "submit":
-        // Crisp confirmation
-        playTone(880, 0.06, "sine", 0.15);
-        setTimeout(() => playTone(1100, 0.1, "sine", 0.12), 50);
+        // Confident confirmation
+        playTone(880, 0.05, "sine", 0.12);
+        setTimeout(() => playTone(1100, 0.08, "sine", 0.15), 40);
+        setTimeout(() => playTone(1320, 0.06, "sine", 0.08), 90);
         break;
         
       case "join":
-        // Welcoming chime
-        playTone(392, 0.1, "sine", 0.12);
-        setTimeout(() => playTone(494, 0.1, "sine", 0.14), 80);
-        setTimeout(() => playTone(587, 0.15, "sine", 0.16), 160);
+        // Welcoming arrival chime
+        playTone(440, 0.08, "sine", 0.1);
+        setTimeout(() => playTone(554, 0.08, "sine", 0.12), 60);
+        setTimeout(() => playTone(659, 0.12, "sine", 0.14), 120);
+        setTimeout(() => playTone(880, 0.18, "sine", 0.1), 200);
         break;
         
       case "error":
-        // Soft error
-        playTone(220, 0.12, "square", 0.06);
-        setTimeout(() => playTone(180, 0.15, "square", 0.05), 80);
+        // Gentle but clear error
+        playTone(280, 0.1, "triangle", 0.08);
+        setTimeout(() => playTone(220, 0.15, "triangle", 0.06), 100);
         break;
         
       case "whoosh":
-        // Transition swoosh
-        playNoise(0.15, 0.08);
-        playFrequencySweep(400, 100, 0.12, 0.05);
+        // Smooth transition swoosh
+        playNoise(0.18, 0.06, 3000);
+        playFrequencySweep(500, 100, 0.15, 0.04);
         break;
         
       case "ding":
-        // Pleasant notification ding
-        playTone(1047, 0.15, "sine", 0.12);
-        playTone(1319, 0.15, "sine", 0.08);
+        // Crystal clear notification
+        playTone(1047, 0.12, "sine", 0.15);
+        playTone(1319, 0.12, "sine", 0.1);
+        setTimeout(() => playTone(1568, 0.15, "sine", 0.08), 50);
         break;
         
       case "sweep":
-        // UI sweep transition
-        playFrequencySweep(300, 800, 0.2, 0.06);
+        // Elegant UI transition
+        playFrequencySweep(200, 600, 0.15, 0.06);
+        setTimeout(() => playFrequencySweep(400, 800, 0.1, 0.04), 80);
+        break;
+
+      case "magic":
+        // Sparkly magical sound
+        for (let i = 0; i < 5; i++) {
+          setTimeout(() => {
+            const freq = 1200 + Math.random() * 600;
+            playTone(freq, 0.08, "sine", 0.06);
+          }, i * 50);
+        }
+        playFrequencySweep(400, 1000, 0.3, 0.05);
+        break;
+
+      case "powerup":
+        // Energizing power-up
+        playFrequencySweep(200, 800, 0.25, 0.1, "sawtooth");
+        setTimeout(() => playChord([523, 659, 784, 1047], 0.3), 150);
+        break;
+
+      case "sparkle":
+        // Twinkling sparkle
+        const sparkleNotes = [1200, 1500, 1800, 1400, 1600];
+        sparkleNotes.forEach((freq, i) => {
+          setTimeout(() => playTone(freq, 0.05, "sine", 0.04), i * 40);
+        });
+        break;
+
+      case "bounce":
+        // Playful bouncy sound
+        playTone(300, 0.08, "sine", 0.12);
+        setTimeout(() => playTone(450, 0.06, "sine", 0.1), 60);
+        setTimeout(() => playTone(600, 0.08, "sine", 0.08), 120);
         break;
     }
-  }, [playTone, playNoise, playFrequencySweep]);
+  }, [playTone, playNoise, playFrequencySweep, playChord]);
 
   return { playSound };
 };
