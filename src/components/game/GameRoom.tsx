@@ -64,12 +64,13 @@ export const GameRoom: React.FC<GameRoomProps> = ({
       playSound("reveal");
       if (currentRound.points_awarded && currentRound.points_awarded > 0) {
         setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 1500);
+        playSound("success");
+        setTimeout(() => setShowConfetti(false), 2000);
       }
     } else if (currentRound?.phase === "guessing") {
-      playSound("whoosh");
+      playSound("powerup");
     } else if (currentRound?.phase === "clue_giving") {
-      playSound("sweep");
+      playSound("magic");
     }
   }, [currentRound?.phase, currentRound?.points_awarded, playSound]);
   

@@ -1,156 +1,116 @@
 // Scoring configuration - matches visual zones
 // Red (center): 30 pts, Orange: 20 pts, Yellow: 10 pts
-// Zone sizes in degrees: Red = 6°, Orange = 8° each side, Yellow = 10° each side
+// Zone sizes in degrees: Red = 4°, Orange = 6° each side, Yellow = 8° each side (3/4 original size)
 export const SCORING_CONFIG = {
-  redHalfWidth: 3,      // 3 degrees each side from center = 6 total
-  orangeWidth: 8,       // 8 degrees each side
-  yellowWidth: 10,      // 10 degrees each side
+  redHalfWidth: 2,      // 2 degrees each side from center = 4 total
+  orangeWidth: 6,       // 6 degrees each side
+  yellowWidth: 8,       // 8 degrees each side
   redPoints: 30,
   orangePoints: 20,
   yellowPoints: 10,
 };
 
-// Fun, niche, and easy-to-judge extreme pairs
+// Fun prompts from user
 export const EXTREME_PAIRS = [
-  // Food & Drink Opinions
-  { left: "Underrated Food", right: "Overrated Food" },
-  { left: "Breakfast Food", right: "Midnight Snack" },
-  { left: "Guilty Pleasure Meal", right: "Fancy Restaurant Order" },
-  { left: "Kid's Menu Item", right: "Acquired Taste" },
-  { left: "Gas Station Snack", right: "Michelin Star Dish" },
-  { left: "Eaten Cold", right: "Must Be Hot" },
-  { left: "Shareable", right: "Don't Touch My Food" },
-  { left: "Healthy But Tasty", right: "Worth the Calories" },
-  { left: "Pineapple on Pizza Hater", right: "Pineapple on Pizza Lover" },
-  { left: "Coffee Addict", right: "Tea Purist" },
-  
-  // Entertainment & Pop Culture
+  { left: "Underrated YouTuber", right: "Overrated YouTuber" },
   { left: "Underrated Movie", right: "Overrated Movie" },
-  { left: "Enjoyable YouTuber", right: "Annoying YouTuber" },
-  { left: "Binge-worthy Show", right: "Background Noise Show" },
-  { left: "Rewatchable Movie", right: "One and Done" },
-  { left: "Guilty Pleasure Song", right: "Objectively Good Music" },
-  { left: "Iconic Villain", right: "Forgettable Villain" },
-  { left: "Deserved the Hype", right: "Overhyped" },
-  { left: "Comfort Rewatch", right: "Life-Changing First Watch" },
-  { left: "Skippable Episode", right: "Best Episode Ever" },
-  { left: "Great Soundtrack", right: "Unmemorable Music" },
-  
-  // Social & Personality
-  { left: "Acceptable to Do Alone", right: "Weird to Do Alone" },
-  { left: "Good First Date Idea", right: "Terrible First Date" },
-  { left: "Small Talk Topic", right: "Deep Conversation Topic" },
-  { left: "Text Back Immediately", right: "Leave on Read" },
-  { left: "Chaotic Friend Energy", right: "Mom Friend Energy" },
-  { left: "Early Bird Activity", right: "Night Owl Activity" },
-  { left: "Introvert Recharge", right: "Extrovert Recharge" },
-  { left: "Good House Guest", right: "Overstayed Welcome" },
-  { left: "Replies with Memes", right: "Replies with Paragraphs" },
-  { left: "Chronically Online", right: "Touched Grass Today" },
-  
-  // Life & Experiences
-  { left: "Childhood Dream Job", right: "Adult Reality Job" },
-  { left: "Worth the Money", right: "Total Ripoff" },
-  { left: "Green Flag", right: "Red Flag" },
-  { left: "Main Character Moment", right: "NPC Moment" },
-  { left: "Peak Adulting", right: "Faking Being an Adult" },
-  { left: "Life Hack", right: "Just Being Lazy" },
-  { left: "Justified Splurge", right: "Financial Mistake" },
-  { left: "Skill Issue", right: "Game is Broken" },
-  { left: "Humble Brag", right: "Genuine Complaint" },
-  { left: "Good Advice", right: "Toxic Positivity" },
-  
-  // Things & Objects
-  { left: "Essential Item", right: "Useless Gadget" },
-  { left: "Status Symbol", right: "Actually Practical" },
-  { left: "Aesthetic Purchase", right: "Functional Purchase" },
-  { left: "Nostalgic Item", right: "Best Left in the Past" },
-  { left: "DIY Project", right: "Just Buy It" },
-  { left: "Gift Card Territory", right: "Thoughtful Gift Only" },
-  { left: "IKEA Nightmare", right: "Surprisingly Easy Assembly" },
-  { left: "Keeps Forever", right: "Throws Away Immediately" },
-  
-  // Places & Travel
-  { left: "Tourist Trap", right: "Hidden Gem" },
-  { left: "Vacation Destination", right: "Would Live There" },
-  { left: "Instagram vs Reality", right: "Looks Better in Person" },
-  { left: "Road Trip Worthy", right: "Fly There Only" },
-  { left: "Cozy Vibes", right: "Party Destination" },
-  { left: "Bucket List Destination", right: "Overrated Location" },
-  { left: "Off the Beaten Path", right: "Basic Tourist Spot" },
-  
-  // Activities & Hobbies
-  { left: "Relaxing Activity", right: "Secretly Stressful" },
-  { left: "Fun in Theory", right: "Fun in Practice" },
-  { left: "Solo Activity", right: "Needs a Group" },
-  { left: "Cheap Hobby", right: "Money Pit Hobby" },
-  { left: "Productive Procrastination", right: "Pure Procrastination" },
-  { left: "Personality Trait Hobby", right: "Just a Hobby" },
-  { left: "Would Try Once", right: "Do Every Weekend" },
-  { left: "Requires Talent", right: "Anyone Can Learn" },
-  
-  // Opinions & Judgments  
-  { left: "Valid Opinion", right: "Wrong Opinion" },
-  { left: "Hot Take", right: "Room Temperature Take" },
-  { left: "Based Take", right: "Cringe Take" },
-  { left: "Controversial Opinion", right: "Everyone Agrees" },
-  { left: "Aging Well", right: "Aging Poorly" },
-  { left: "Peak Fiction", right: "Mid at Best" },
-  { left: "Iconic", right: "Trying Too Hard" },
-  { left: "Timeless", right: "Dated" },
-  
-  // Internet & Tech
-  { left: "Reply All Offense", right: "Acceptable Reply All" },
-  { left: "Good Meme", right: "Dead Meme" },
-  { left: "Worth the Subscription", right: "Cancel Immediately" },
-  { left: "Acceptable Screen Time", right: "Touch Grass Needed" },
-  { left: "Actually Useful App", right: "Deleted After a Day" },
-  { left: "Good WiFi Name", right: "Boring WiFi Name" },
-  { left: "Notification On", right: "Immediately Muted" },
-  
-  // Work & Productivity
-  { left: "Dream Job", right: "Nightmare Job" },
-  { left: "Work From Home Win", right: "Office Only Task" },
-  { left: "Meeting That Could Be an Email", right: "Valuable Meeting" },
-  { left: "Monday Energy", right: "Friday Energy" },
-  { left: "Career Advice Worth Taking", right: "Boomer Career Advice" },
-  { left: "LinkedIn Cringe", right: "Actually Inspiring" },
-  { left: "Side Hustle Energy", right: "9 to 5 Loyalty" },
-  
-  // Aesthetic & Style
-  { left: "Pinterest Aesthetic", right: "Real Life Aesthetic" },
-  { left: "Outfit Repeat Worthy", right: "One Time Only" },
-  { left: "Effortlessly Cool", right: "Trying Too Hard" },
-  { left: "Minimalist Chic", right: "Maximalist Chaos" },
-  { left: "Timeless Style", right: "Trendy Right Now" },
-  { left: "Dress for Comfort", right: "Dress to Impress" },
-  
-  // Relationships & Dating
-  { left: "Swipe Right", right: "Swipe Left" },
-  { left: "Dating App Gold", right: "Walking Red Flag" },
-  { left: "Marriage Material", right: "Situationship Energy" },
-  { left: "Meet the Parents Ready", right: "Secret for Now" },
-  { left: "Couple Goals", right: "Codependent Behavior" },
-  { left: "Healthy Boundary", right: "Playing Games" },
-  
-  // Animals & Nature
-  { left: "Would Pet", right: "Would Run From" },
-  { left: "Cute Animal", right: "Objectively Terrifying" },
-  { left: "Ideal Pet", right: "Wild Animal Only" },
-  { left: "Instagram Pet", right: "Chaotic Pet Energy" },
-  { left: "Dog Person Energy", right: "Cat Person Energy" },
-  
-  // Misc Fun Categories
-  { left: "Before Coffee", right: "After Coffee" },
-  { left: "Airport Appropriate", right: "Home Only" },
-  { left: "Acceptable Excuse", right: "Nobody Believes You" },
-  { left: "Good Plot Twist", right: "Saw It Coming" },
-  { left: "Satisfying Ending", right: "Ruined the Whole Thing" },
-  { left: "Quotable Line", right: "Instantly Forgettable" },
-  { left: "Core Memory", right: "Already Forgot" },
-  { left: "Would Time Travel For", right: "Good Riddance" },
-  { left: "Therapy Worthy Topic", right: "Just Get Over It" },
-  { left: "Deserves a Documentary", right: "Not That Deep" },
+  { left: "Underrated Song", right: "Overplayed Song" },
+  { left: "Underrated App", right: "Overused App" },
+  { left: "Underrated School Subject", right: "Useless School Subject" },
+  { left: "Underrated Sport", right: "Boring Sport" },
+  { left: "Underrated Food", right: "Gross Food" },
+  { left: "Underrated Hobby", right: "Waste of Time" },
+  { left: "Underrated Celebrity", right: "Annoying Celebrity" },
+  { left: "Underrated Brand", right: "Cash Grab Brand" },
+  { left: "Best Study Spot", right: "Worst Study Spot" },
+  { left: "Best Snack", right: "Worst Snack" },
+  { left: "Best Ice Cream Flavor", right: "Worst Ice Cream Flavor" },
+  { left: "Best Pizza Topping", right: "Should Be Illegal" },
+  { left: "Best Fast Food", right: "Barely Edible" },
+  { left: "Relaxing Sound", right: "Stress-Inducing Sound" },
+  { left: "Comfort Movie", right: "Hard to Sit Through" },
+  { left: "Comfort Food", right: "Regret Food" },
+  { left: "Comfort Outfit", right: "Embarrassing Outfit" },
+  { left: "Smart Purchase", right: "Complete Ripoff" },
+  { left: "Worth the Money", right: "Not Worth It" },
+  { left: "Good Deal", right: "Scam" },
+  { left: "Fun Party Game", right: "Party Killer" },
+  { left: "Fun Class", right: "Painful Class" },
+  { left: "Fun Job", right: "Soul Draining Job" },
+  { left: "Useful App", right: "Phone Storage Waste" },
+  { left: "Useful Skill", right: "Useless Skill" },
+  { left: "Cool Trend", right: "Cringe Trend" },
+  { left: "Cool Slang", right: "Embarrassing Slang" },
+  { left: "Impressive Talent", right: "Weird Flex" },
+  { left: "Impressive Resume Line", right: "Resume Filler" },
+  { left: "Healthy Habit", right: "Annoying Habit" },
+  { left: "Bad Habit", right: "Dealbreaker Habit" },
+  { left: "Great Teacher Trait", right: "Terrible Teacher Trait" },
+  { left: "Great Boss", right: "Nightmare Boss" },
+  { left: "Ideal Vacation", right: "Stressful Trip" },
+  { left: "Ideal Weather", right: "Awful Weather" },
+  { left: "Easy Class", right: "GPA Destroyer" },
+  { left: "Easy Test", right: "Impossible Test" },
+  { left: "Good Advice", right: "Terrible Advice" },
+  { left: "Helpful Feedback", right: "Personal Attack" },
+  { left: "Good Gift", right: "Useless Gift" },
+  { left: "Thoughtful Gift", right: "Last-Minute Gift" },
+  { left: "Good Movie Ending", right: "Ruined Ending" },
+  { left: "Good Plot Twist", right: "Nonsense Twist" },
+  { left: "Realistic Goal", right: "Delusional Goal" },
+  { left: "Ambitious", right: "Unrealistic" },
+  { left: "Productive Day", right: "Wasted Day" },
+  { left: "Productive Procrastination", right: "Actual Procrastination" },
+  { left: "Organized Desk", right: "Disaster Desk" },
+  { left: "Cool Teacher", right: "Tries Too Hard" },
+  { left: "Cool Parent", right: "Embarrassing Parent" },
+  { left: "Funny Joke", right: "Painfully Unfunny" },
+  { left: "Clever Pun", right: "Groan-Worthy Pun" },
+  { left: "Interesting Class Topic", right: "Instant Nap" },
+  { left: "Interesting Podcast", right: "Background Noise" },
+  { left: "Worth Watching", right: "Not Finishing" },
+  { left: "Worth Reading", right: "Skimming Only" },
+  { left: "Good Roommate", right: "Nightmare Roommate" },
+  { left: "Good Neighbor", right: "Avoid at All Costs" },
+  { left: "Useful Feature", right: "Gimmick" },
+  { left: "Innovative", right: "Pointless" },
+  { left: "Fair Rule", right: "Dumb Rule" },
+  { left: "Necessary Rule", right: "Power Trip" },
+  { left: "Calm Debate", right: "Heated Argument" },
+  { left: "Friendly Roast", right: "Mean-Spirited Roast" },
+  { left: "Good Team Player", right: "Carries the Team" },
+  { left: "Team Liability", right: "Dead Weight" },
+  { left: "Healthy Competition", right: "Toxic Competition" },
+  { left: "Good School Lunch", right: "Crime Against Food" },
+  { left: "Best Breakfast Food", right: "Worst Breakfast Food" },
+  { left: "Easy Decision", right: "Impossible Choice" },
+  { left: "Socially Acceptable", right: "Awkward" },
+  { left: "Confident", right: "Arrogant" },
+  { left: "Polite Honesty", right: "Brutal Honesty" },
+  { left: "Productive Meeting", right: "Waste of Time Meeting" },
+  { left: "Good First Impression", right: "Bad First Impression" },
+  { left: "Cool Hobby", right: "Weird Hobby" },
+  { left: "Smart Shortcut", right: "Lazy Shortcut" },
+  { left: "Good Rule Break", right: "Bad Rule Break" },
+  { left: "Worth Studying", right: "Useless Memorization" },
+  { left: "Inspiring Speaker", right: "Boring Speaker" },
+  { left: "Helpful Notification", right: "Annoying Notification" },
+  { left: "Useful Update", right: "Ruined the App" },
+  { left: "Good Username", right: "Regrettable Username" },
+  { left: "Iconic Movie Scene", right: "Forgettable Scene" },
+  { left: "Catchy Song", right: "Song You Skip" },
+  { left: "Good School Tradition", right: "Outdated Tradition" },
+  { left: "Good Trend", right: "Trend That Should End" },
+  { left: "Great Sequel", right: "Unnecessary Sequel" },
+  { left: "Worth Staying Up For", right: "Not Worth Losing Sleep" },
+  { left: "Productive All-Nighter", right: "Bad Idea" },
+  { left: "Good Group Project", right: "Nightmare Group Project" },
+  { left: "Fair Grading", right: "Unfair Grading" },
+  { left: "Fun Challenge", right: "Stressful Challenge" },
+  { left: "Good Competition", right: "Rigged Competition" },
+  { left: "Impressive Achievement", right: "Luck" },
+  { left: "Good Strategy", right: "Overthinking" },
+  { left: "Peak Experience", right: "Forgettable Moment" },
 ];
 
 // Game constants
@@ -172,15 +132,13 @@ export const generateRoomCode = (): string => {
   return code;
 };
 
-// Generate a random target
+// Generate a random target - now can be at far ends
 export const generateTarget = (): { center: number; width: number } => {
-  const width = 20; // Fixed width, not really used anymore but kept for compatibility
+  const width = 20;
   
-  // Zone half-width in degrees: 3 (red) + 8 (orange) + 10 (yellow) = 21°
-  // Target angle must be between 21° and 159° (180 - 21) to keep zones visible
-  // In 0-100 scale: min = (21/180)*100 ≈ 12, max = (159/180)*100 ≈ 88
-  const minCenter = 15; // Slightly more margin for safety
-  const maxCenter = 85;
+  // Allow targets at far ends now (5-95 range)
+  const minCenter = 5;
+  const maxCenter = 95;
   const center = Math.floor(Math.random() * (maxCenter - minCenter + 1)) + minCenter;
   
   return { center, width };
@@ -192,7 +150,7 @@ export const getRandomExtremes = (): { left: string; right: string } => {
 };
 
 // Calculate score based on guess angle vs target angle
-// Uses the same zone sizes as the visual: red=6°, orange=8° each side, yellow=10° each side
+// Uses the same zone sizes as the visual: red=4°, orange=6° each side, yellow=8° each side
 export const calculateScore = (
   guessValue: number,  // 0-100 scale
   targetCenter: number, // 0-100 scale
