@@ -211,7 +211,7 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
             strokeWidth="2" 
           />
 
-          {/* Target zone - with enhanced visuals */}
+          {/* Target zone - static, no animations */}
           {(showTarget || showReveal) && targetCenter !== undefined && (
             <g className={cn(showReveal && "animate-pop")} filter={showReveal ? "url(#glow)" : undefined}>
               {/* Yellow outer zones */}
@@ -222,7 +222,6 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
                   radius - 6
                 )}
                 fill="hsl(48, 100%, 55%)"
-                className={cn(showReveal && "animate-pulse-soft")}
               />
               <path
                 d={describePieSlice(
@@ -231,7 +230,6 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
                   radius - 6
                 )}
                 fill="hsl(48, 100%, 55%)"
-                className={cn(showReveal && "animate-pulse-soft")}
               />
               
               {/* Orange middle zones */}
