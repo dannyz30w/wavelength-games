@@ -52,12 +52,9 @@ export const Lobby: React.FC<LobbyProps> = ({
               <Zap className="w-8 h-8" />
             </div>
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-foreground mb-2">
+          <h1 className="text-4xl font-extrabold tracking-tight text-foreground">
             Wavelength
           </h1>
-          <p className="text-muted-foreground text-sm font-medium">
-            Read minds. Score points.
-          </p>
         </div>
 
         {/* Main Panel */}
