@@ -10,15 +10,12 @@ export type ThemeName =
   | "arctic"
   | "volcano"
   | "candy"
-  | "cyberpunk"
-  | "jungle"
-  | "aurora"
-  | "retro";
+  | "aurora";
 
 export interface Theme {
   id: ThemeName;
   name: string;
-  emoji: string;
+  icon: string; // CSS class for custom icon
   description: string;
   colors: {
     primary: string;
@@ -27,13 +24,14 @@ export interface Theme {
     background: string;
     card: string;
   };
+  soundProfile: "space" | "ocean" | "desert" | "forest" | "neon" | "warm" | "ice" | "fire" | "sweet" | "ethereal";
 }
 
 export const themes: Theme[] = [
   {
     id: "space",
     name: "Deep Space",
-    emoji: "🚀",
+    icon: "theme-icon-space",
     description: "Stars and galaxies",
     colors: {
       primary: "210 100% 55%",
@@ -42,11 +40,12 @@ export const themes: Theme[] = [
       background: "235 15% 6%",
       card: "235 12% 9%",
     },
+    soundProfile: "space",
   },
   {
     id: "ocean",
     name: "Ocean Depths",
-    emoji: "🐠",
+    icon: "theme-icon-ocean",
     description: "Underwater adventure",
     colors: {
       primary: "195 100% 50%",
@@ -55,11 +54,12 @@ export const themes: Theme[] = [
       background: "200 80% 8%",
       card: "200 60% 12%",
     },
+    soundProfile: "ocean",
   },
   {
     id: "desert",
     name: "Desert Oasis",
-    emoji: "🏜️",
+    icon: "theme-icon-desert",
     description: "Sandy dunes & cacti",
     colors: {
       primary: "35 100% 55%",
@@ -68,11 +68,12 @@ export const themes: Theme[] = [
       background: "30 30% 10%",
       card: "30 25% 14%",
     },
+    soundProfile: "desert",
   },
   {
     id: "forest",
     name: "Enchanted Forest",
-    emoji: "🌲",
+    icon: "theme-icon-forest",
     description: "Mystical woodland",
     colors: {
       primary: "140 70% 45%",
@@ -81,11 +82,12 @@ export const themes: Theme[] = [
       background: "140 30% 8%",
       card: "140 25% 12%",
     },
+    soundProfile: "forest",
   },
   {
     id: "neon",
     name: "Neon Nights",
-    emoji: "💜",
+    icon: "theme-icon-neon",
     description: "Electric vibes",
     colors: {
       primary: "320 100% 60%",
@@ -94,11 +96,12 @@ export const themes: Theme[] = [
       background: "270 50% 5%",
       card: "270 40% 10%",
     },
+    soundProfile: "neon",
   },
   {
     id: "sunset",
     name: "Golden Sunset",
-    emoji: "🌅",
+    icon: "theme-icon-sunset",
     description: "Warm twilight",
     colors: {
       primary: "25 100% 55%",
@@ -107,11 +110,12 @@ export const themes: Theme[] = [
       background: "15 40% 8%",
       card: "15 35% 12%",
     },
+    soundProfile: "warm",
   },
   {
     id: "arctic",
     name: "Arctic Ice",
-    emoji: "❄️",
+    icon: "theme-icon-arctic",
     description: "Frozen wonderland",
     colors: {
       primary: "200 80% 70%",
@@ -120,11 +124,12 @@ export const themes: Theme[] = [
       background: "210 40% 10%",
       card: "210 35% 15%",
     },
+    soundProfile: "ice",
   },
   {
     id: "volcano",
     name: "Volcanic",
-    emoji: "🌋",
+    icon: "theme-icon-volcano",
     description: "Molten fire",
     colors: {
       primary: "15 100% 55%",
@@ -133,11 +138,12 @@ export const themes: Theme[] = [
       background: "0 50% 6%",
       card: "0 40% 10%",
     },
+    soundProfile: "fire",
   },
   {
     id: "candy",
     name: "Candy Land",
-    emoji: "🍭",
+    icon: "theme-icon-candy",
     description: "Sweet treats",
     colors: {
       primary: "330 100% 65%",
@@ -146,37 +152,12 @@ export const themes: Theme[] = [
       background: "340 30% 12%",
       card: "340 25% 16%",
     },
-  },
-  {
-    id: "cyberpunk",
-    name: "Cyberpunk",
-    emoji: "🤖",
-    description: "Future tech",
-    colors: {
-      primary: "180 100% 50%",
-      secondary: "320 100% 55%",
-      accent: "60 100% 50%",
-      background: "240 50% 5%",
-      card: "240 45% 10%",
-    },
-  },
-  {
-    id: "jungle",
-    name: "Jungle Safari",
-    emoji: "🦁",
-    description: "Wild adventure",
-    colors: {
-      primary: "80 70% 45%",
-      secondary: "35 90% 45%",
-      accent: "160 70% 40%",
-      background: "80 40% 8%",
-      card: "80 35% 12%",
-    },
+    soundProfile: "sweet",
   },
   {
     id: "aurora",
     name: "Aurora Borealis",
-    emoji: "✨",
+    icon: "theme-icon-aurora",
     description: "Northern lights",
     colors: {
       primary: "160 100% 50%",
@@ -185,19 +166,7 @@ export const themes: Theme[] = [
       background: "220 50% 8%",
       card: "220 45% 12%",
     },
-  },
-  {
-    id: "retro",
-    name: "Retro Arcade",
-    emoji: "👾",
-    description: "80s nostalgia",
-    colors: {
-      primary: "350 100% 60%",
-      secondary: "180 100% 45%",
-      accent: "60 100% 50%",
-      background: "260 60% 8%",
-      card: "260 50% 12%",
-    },
+    soundProfile: "ethereal",
   },
 ];
 

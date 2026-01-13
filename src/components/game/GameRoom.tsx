@@ -37,6 +37,7 @@ interface GameRoomProps {
   onSubmitGuess: (value: number) => Promise<void>;
   onNextRound: () => Promise<void>;
   onLeaveRoom: () => Promise<void>;
+  onKickPlayer?: (playerIdToKick: string) => Promise<void>;
 }
 
 export const GameRoom: React.FC<GameRoomProps> = ({
@@ -48,6 +49,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
   onSubmitGuess,
   onNextRound,
   onLeaveRoom,
+  onKickPlayer,
 }) => {
   const { toast } = useToast();
   const { playSound } = useSoundEffects();
