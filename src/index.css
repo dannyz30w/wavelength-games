@@ -943,12 +943,12 @@
   100% { transform: translateY(-100vh) translateX(-10px) scale(0.8); opacity: 0; }
 }
 
-@keyframes swim {
-  0% { transform: translateX(-100px) translateY(0); }
-  25% { transform: translateX(25vw) translateY(-10px); }
-  50% { transform: translateX(50vw) translateY(5px); }
-  75% { transform: translateX(75vw) translateY(-5px); }
-  100% { transform: translateX(calc(100vw + 100px)) translateY(0); }
+@keyframes fish-swim {
+  0% { left: -60px; transform: translateY(0); }
+  25% { transform: translateY(-10px); }
+  50% { transform: translateY(5px); }
+  75% { transform: translateY(-5px); }
+  100% { left: calc(100vw + 60px); transform: translateY(0); }
 }
 
 @keyframes sway {
@@ -957,8 +957,34 @@
 }
 
 .animate-bubble-rise { animation: bubble-rise 8s ease-in-out infinite; }
-.animate-swim { animation: swim 20s linear infinite; }
+.animate-fish-swim { animation: fish-swim 20s linear infinite; }
 .animate-sway { animation: sway 3s ease-in-out infinite; }
+
+/* Space parallax stars */
+@keyframes star-drift-slow {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes star-drift-mid {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(100vh); }
+}
+
+.animate-star-drift-slow { animation: star-drift-slow 60s linear infinite; }
+.animate-star-drift-mid { animation: star-drift-mid 40s linear infinite; }
+
+/* CSS Snowflake shape */
+.snowflake-css {
+  background: white;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+/* Ice crystal shape */
+.ice-crystal {
+  background: linear-gradient(135deg, hsl(200, 80%, 70%) 0%, hsl(200, 60%, 90%) 100%);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
 
 /* Desert Theme */
 @keyframes tumble {

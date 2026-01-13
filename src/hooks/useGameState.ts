@@ -60,7 +60,27 @@ export const useGameState = () => {
           table: "players",
           filter: `room_id=eq.${gameState.room.id}`,
         },
-        async () => {
+        async (payload) => {
+          // Check if current player was kicked
+          if (payload.eventType === "DELETE") {
+            const deletedPlayer = payload.old as Player;
+            if (deletedPlayer.player_id === playerId) {
+              // Current player was kicked
+              setGameState({
+                room: null,
+                players: [],
+                currentRound: null,
+                myPlayer: null,
+              });
+              toast({
+                title: "Removed from room",
+                description: "You have been removed from the game",
+                variant: "destructive",
+              });
+              return;
+            }
+          }
+
           const { data: players } = await supabase
             .from("players")
             .select("*")
@@ -105,7 +125,7 @@ export const useGameState = () => {
     return () => {
       supabase.removeChannel(roomChannel);
     };
-  }, [gameState.room?.id, playerId]);
+  }, [gameState.room?.id, playerId, toast]);
 
   const createRoom = useCallback(async (playerName: string, isPrivate: boolean = false) => {
     setIsLoading(true);
@@ -218,10 +238,10 @@ export const useGameState = () => {
         .select("*")
         .eq("room_id", room.id);
 
-      if (players && players.length >= 2) {
+      if (players && players.length >= 8) {
         toast({
           title: "Room Full",
-          description: "This room already has 2 players",
+          description: "This room already has 8 players",
           variant: "destructive",
         });
         return false;
@@ -284,11 +304,11 @@ export const useGameState = () => {
       const target = generateTarget();
       const extremes = getRandomExtremes();
       
-      const otherPlayer = gameState.players.find(p => p.player_id !== playerId);
+      const otherPlayers = gameState.players.filter(p => p.player_id !== playerId);
       
-      if (!otherPlayer) {
+      if (otherPlayers.length === 0) {
         toast({
-          title: "Need 2 Players",
+          title: "Need 2+ Players",
           description: "Wait for another player to join",
           variant: "destructive",
         });
@@ -307,34 +327,23 @@ export const useGameState = () => {
         ? existingRounds[0].round_number + 1 
         : 1;
 
-      let clueGiverId: string;
-      let guesserId: string;
+      // Rotate clue giver among all players
+      const allPlayerIds = gameState.players.map(p => p.player_id);
+      const clueGiverIndex = (roundNumber - 1) % allPlayerIds.length;
+      const clueGiverId = allPlayerIds[clueGiverIndex];
       
-      if (existingRounds && existingRounds.length > 0) {
-        const prevClueGiverId = existingRounds[0].psychic_id;
-        if (prevClueGiverId === playerId) {
-          clueGiverId = otherPlayer.player_id;
-          guesserId = playerId;
-        } else {
-          clueGiverId = playerId;
-          guesserId = otherPlayer.player_id;
-        }
-      } else {
-        clueGiverId = playerId;
-        guesserId = otherPlayer.player_id;
+      // Everyone else is a guesser (for simplicity, pick first non-clue-giver as primary guesser)
+      const guesserId = allPlayerIds.find(id => id !== clueGiverId) || allPlayerIds[0];
+
+      // Update all players' roles
+      for (const player of gameState.players) {
+        const role: PlayerRole = player.player_id === clueGiverId ? "psychic" : "guesser";
+        await supabase
+          .from("players")
+          .update({ role })
+          .eq("room_id", gameState.room.id)
+          .eq("player_id", player.player_id);
       }
-
-      await supabase
-        .from("players")
-        .update({ role: "guesser" as PlayerRole })
-        .eq("room_id", gameState.room.id)
-        .eq("player_id", guesserId);
-
-      await supabase
-        .from("players")
-        .update({ role: "psychic" as PlayerRole })
-        .eq("room_id", gameState.room.id)
-        .eq("player_id", clueGiverId);
 
       const { error: roundError } = await supabase
         .from("rounds")
@@ -487,6 +496,48 @@ export const useGameState = () => {
     }
   }, [gameState.room, gameState.myPlayer, toast]);
 
+  const kickPlayer = useCallback(async (playerIdToKick: string) => {
+    if (!gameState.room || !gameState.myPlayer?.is_host) return;
+    
+    // Don't allow kicking yourself
+    if (playerIdToKick === playerId) return;
+    
+    setIsLoading(true);
+    try {
+      const playerToKick = gameState.players.find(p => p.player_id === playerIdToKick);
+      if (!playerToKick) {
+        toast({
+          title: "Error",
+          description: "Player not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from("players")
+        .delete()
+        .eq("room_id", gameState.room.id)
+        .eq("player_id", playerIdToKick);
+
+      if (error) throw error;
+
+      toast({
+        title: "Player Removed",
+        description: `${playerToKick.name} has been removed from the room`,
+      });
+    } catch (error) {
+      console.error("Error kicking player:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove player",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [gameState.room, gameState.myPlayer, gameState.players, playerId, toast]);
+
   return {
     gameState,
     playerId,
@@ -498,5 +549,6 @@ export const useGameState = () => {
     submitGuess,
     nextRound,
     leaveRoom,
+    kickPlayer,
   };
 };
