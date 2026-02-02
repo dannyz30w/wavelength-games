@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, Plus, ArrowRight, Zap } from "lucide-react";
+import { Users, Plus, ArrowRight } from "lucide-react";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { cn } from "@/lib/utils";
 
@@ -45,17 +45,6 @@ export const Lobby: React.FC<LobbyProps> = ({
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="text-center mb-10 animate-bounce-in">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="icon-container icon-container-primary w-14 h-14 rounded-2xl">
-              <Zap className="w-8 h-8" />
-            </div>
-          </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-foreground">
-            Wavelength
-          </h1>
-        </div>
 
         {/* Main Panel */}
         <div className="game-card p-6 animate-slide-up stagger-1">
@@ -193,11 +182,6 @@ export const Lobby: React.FC<LobbyProps> = ({
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        <p className="text-center text-muted-foreground text-xs mt-6 animate-slide-up stagger-2 font-medium">
-          A mind-reading game for 2+ players
-        </p>
       </div>
     </div>
   );

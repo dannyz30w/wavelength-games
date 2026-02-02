@@ -18,6 +18,7 @@ const Index = () => {
     submitGuess,
     nextRound,
     leaveRoom,
+    kickPlayer,
   } = useGameState();
 
   const isInRoom = gameState.room !== null;
@@ -48,6 +49,7 @@ const Index = () => {
           onSubmitGuess={submitGuess}
           onNextRound={nextRound}
           onLeaveRoom={leaveRoom}
+          onKickPlayer={kickPlayer}
         />
       ) : (
         <Lobby
