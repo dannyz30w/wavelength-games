@@ -17,13 +17,6 @@ const ThemeIcon: React.FC<{ themeId: ThemeName; className?: string }> = ({ theme
         <circle cx="8" cy="18" r="1" opacity="0.5" />
       </svg>
     ),
-    ocean: (
-      <svg viewBox="0 0 24 24" className={cn("w-5 h-5", className)} fill="currentColor">
-        <path d="M2 12c2-2 4-2 6 0s4 2 6 0 4-2 6 0" stroke="currentColor" strokeWidth="2" fill="none" />
-        <path d="M2 16c2-2 4-2 6 0s4 2 6 0 4-2 6 0" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.6" />
-        <path d="M2 8c2-2 4-2 6 0s4 2 6 0 4-2 6 0" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
-      </svg>
-    ),
     desert: (
       <svg viewBox="0 0 24 24" className={cn("w-5 h-5", className)} fill="currentColor">
         <circle cx="18" cy="6" r="3" opacity="0.8" />
@@ -39,13 +32,6 @@ const ThemeIcon: React.FC<{ themeId: ThemeName; className?: string }> = ({ theme
     neon: (
       <svg viewBox="0 0 24 24" className={cn("w-5 h-5", className)} fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-      </svg>
-    ),
-    sunset: (
-      <svg viewBox="0 0 24 24" className={cn("w-5 h-5", className)} fill="currentColor">
-        <circle cx="12" cy="14" r="5" />
-        <path d="M2 18 h20" stroke="currentColor" strokeWidth="2" />
-        <path d="M12 3 v2 M5 7 l1.5 1.5 M19 7 l-1.5 1.5" stroke="currentColor" strokeWidth="2" fill="none" />
       </svg>
     ),
     arctic: (

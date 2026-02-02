@@ -118,8 +118,6 @@ export const useSoundEffects = () => {
   const getThemeSoundModifier = useCallback(() => {
     const profile = currentTheme.soundProfile;
     switch (profile) {
-      case "ocean":
-        return { baseFreq: 0.8, reverb: 1.2, bubbles: true };
       case "space":
         return { baseFreq: 1.2, reverb: 1.5, echo: true };
       case "desert":
@@ -128,8 +126,6 @@ export const useSoundEffects = () => {
         return { baseFreq: 1.0, reverb: 1.1, nature: true };
       case "neon":
         return { baseFreq: 1.3, reverb: 0.9, synth: true };
-      case "warm":
-        return { baseFreq: 0.85, reverb: 1.0, warm: true };
       case "ice":
         return { baseFreq: 1.4, reverb: 1.3, crystal: true };
       case "fire":
@@ -157,11 +153,7 @@ export const useSoundEffects = () => {
         playTone(500 * freqMod, 0.05, "sine", 0.2);
         playTone(1000 * freqMod, 0.04, "sine", 0.15, true, 0.015);
         playTone(700 * freqMod, 0.03, "sine", 0.08, true, 0.04);
-        if (mod.bubbles) {
-          playNoise(0.05, 0.04, 4000, 0.02);
-        } else {
-          playNoise(0.03, 0.03, 6000, 0.02);
-        }
+        playNoise(0.03, 0.03, 6000, 0.02);
         break;
         
       case "success":
@@ -173,11 +165,7 @@ export const useSoundEffects = () => {
         break;
         
       case "reveal":
-        if (mod.bubbles) {
-          // Ocean reveal with bubble sounds
-          playNoise(0.3, 0.06, 3000);
-          playFrequencySweep(100 * freqMod, 300 * freqMod, 0.4, 0.08, "triangle");
-        } else if (mod.crystal) {
+        if (mod.crystal) {
           // Ice reveal with crystalline sounds
           playArpeggio([800, 1200, 1600, 2000, 2400].map(f => f * freqMod), 0.08, 0.05, 0.06);
         } else if (mod.crackle) {
@@ -210,14 +198,8 @@ export const useSoundEffects = () => {
         break;
         
       case "whoosh":
-        if (mod.bubbles) {
-          // Underwater whoosh
-          playNoise(0.25, 0.06, 2500);
-          playFrequencySweep(400 * freqMod, 60 * freqMod, 0.2, 0.05);
-        } else {
-          playNoise(0.2, 0.08, 3500);
-          playFrequencySweep(600 * freqMod, 80 * freqMod, 0.18, 0.06);
-        }
+        playNoise(0.2, 0.08, 3500);
+        playFrequencySweep(600 * freqMod, 80 * freqMod, 0.18, 0.06);
         playFrequencySweep(400 * freqMod, 100 * freqMod, 0.12, 0.03, "triangle", 0.05);
         break;
         

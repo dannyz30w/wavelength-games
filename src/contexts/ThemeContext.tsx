@@ -2,11 +2,9 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 export type ThemeName = 
   | "space" 
-  | "ocean" 
   | "desert" 
   | "forest" 
   | "neon" 
-  | "sunset"
   | "arctic"
   | "volcano"
   | "candy"
@@ -15,7 +13,7 @@ export type ThemeName =
 export interface Theme {
   id: ThemeName;
   name: string;
-  icon: string; // CSS class for custom icon
+  icon: string;
   description: string;
   colors: {
     primary: string;
@@ -24,7 +22,7 @@ export interface Theme {
     background: string;
     card: string;
   };
-  soundProfile: "space" | "ocean" | "desert" | "forest" | "neon" | "warm" | "ice" | "fire" | "sweet" | "ethereal";
+  soundProfile: "space" | "desert" | "forest" | "neon" | "ice" | "fire" | "sweet" | "ethereal";
 }
 
 export const themes: Theme[] = [
@@ -43,24 +41,10 @@ export const themes: Theme[] = [
     soundProfile: "space",
   },
   {
-    id: "ocean",
-    name: "Ocean Depths",
-    icon: "theme-icon-ocean",
-    description: "Underwater adventure",
-    colors: {
-      primary: "195 100% 50%",
-      secondary: "175 70% 45%",
-      accent: "50 100% 60%",
-      background: "200 80% 8%",
-      card: "200 60% 12%",
-    },
-    soundProfile: "ocean",
-  },
-  {
     id: "desert",
     name: "Desert Oasis",
     icon: "theme-icon-desert",
-    description: "Sandy dunes & cacti",
+    description: "Sandy dunes",
     colors: {
       primary: "35 100% 55%",
       secondary: "25 85% 50%",
@@ -97,20 +81,6 @@ export const themes: Theme[] = [
       card: "270 40% 10%",
     },
     soundProfile: "neon",
-  },
-  {
-    id: "sunset",
-    name: "Golden Sunset",
-    icon: "theme-icon-sunset",
-    description: "Warm twilight",
-    colors: {
-      primary: "25 100% 55%",
-      secondary: "350 85% 55%",
-      accent: "50 100% 55%",
-      background: "15 40% 8%",
-      card: "15 35% 12%",
-    },
-    soundProfile: "warm",
   },
   {
     id: "arctic",

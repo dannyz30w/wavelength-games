@@ -327,13 +327,28 @@ export const useGameState = () => {
         ? existingRounds[0].round_number + 1 
         : 1;
 
-      // Rotate clue giver among all players
-      const allPlayerIds = gameState.players.map(p => p.player_id);
-      const clueGiverIndex = (roundNumber - 1) % allPlayerIds.length;
-      const clueGiverId = allPlayerIds[clueGiverIndex];
+      // Get the last round's psychic to avoid same person twice in a row
+      const lastPsychicId = existingRounds && existingRounds.length > 0 
+        ? existingRounds[0].psychic_id 
+        : null;
+
+      // Get all player IDs and sort them for consistent ordering
+      const allPlayerIds = [...gameState.players.map(p => p.player_id)].sort();
       
-      // Everyone else is a guesser (for simplicity, pick first non-clue-giver as primary guesser)
-      const guesserId = allPlayerIds.find(id => id !== clueGiverId) || allPlayerIds[0];
+      // For proper rotation, use round number to determine clue giver
+      // But also ensure we don't repeat the same person twice
+      let clueGiverIndex = (roundNumber - 1) % allPlayerIds.length;
+      let clueGiverId = allPlayerIds[clueGiverIndex];
+      
+      // If this would be the same as last round, move to next player
+      if (clueGiverId === lastPsychicId && allPlayerIds.length > 1) {
+        clueGiverIndex = roundNumber % allPlayerIds.length;
+        clueGiverId = allPlayerIds[clueGiverIndex];
+      }
+      
+      // The guesser is the next person in rotation (different from clue giver)
+      const guesserIndex = (clueGiverIndex + 1) % allPlayerIds.length;
+      const guesserId = allPlayerIds[guesserIndex];
 
       // Update all players' roles
       for (const player of gameState.players) {

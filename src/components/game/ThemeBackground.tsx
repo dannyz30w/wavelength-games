@@ -35,16 +35,12 @@ const generateThemeElements = (themeId: ThemeName) => {
   switch (themeId) {
     case "space":
       return <SpaceElements />;
-    case "ocean":
-      return <OceanElements />;
     case "desert":
       return <DesertElements />;
     case "forest":
       return <ForestElements />;
     case "neon":
       return <NeonElements />;
-    case "sunset":
-      return <SunsetElements />;
     case "arctic":
       return <ArcticElements />;
     case "volcano":
@@ -114,63 +110,6 @@ const SpaceElements = () => (
   </>
 );
 
-// Ocean Theme - Bubbles and SVG fish (moving correctly)
-const OceanElements = () => (
-  <>
-    {/* Bubbles */}
-    {[...Array(25)].map((_, i) => (
-      <div
-        key={`bubble-${i}`}
-        className="absolute rounded-full border border-cyan-300/30 bg-cyan-200/10 animate-bubble-rise"
-        style={{
-          width: `${8 + Math.random() * 20}px`,
-          height: `${8 + Math.random() * 20}px`,
-          left: `${Math.random() * 100}%`,
-          bottom: `-${20 + Math.random() * 30}px`,
-          animationDelay: `${Math.random() * 8}s`,
-          animationDuration: `${6 + Math.random() * 6}s`,
-        }}
-      />
-    ))}
-    {/* SVG Fish swimming left to right */}
-    {[...Array(5)].map((_, i) => (
-      <div
-        key={`fish-${i}`}
-        className="absolute animate-fish-swim"
-        style={{
-          top: `${15 + i * 15}%`,
-          animationDelay: `${i * 3}s`,
-          animationDuration: `${18 + Math.random() * 10}s`,
-        }}
-      >
-        <svg width="40" height="24" viewBox="0 0 40 24" className="opacity-60">
-          <ellipse cx="18" cy="12" rx="14" ry="8" fill={`hsl(${180 + i * 20}, 70%, 50%)`} />
-          <path d="M32 12 L40 4 L40 20 Z" fill={`hsl(${180 + i * 20}, 70%, 50%)`} />
-          <circle cx="10" cy="10" r="2" fill="white" />
-          <circle cx="10" cy="10" r="1" fill="black" />
-        </svg>
-      </div>
-    ))}
-    {/* SVG Seaweed */}
-    {[...Array(6)].map((_, i) => (
-      <div
-        key={`seaweed-${i}`}
-        className="absolute bottom-0 animate-sway origin-bottom"
-        style={{
-          left: `${8 + i * 15}%`,
-          animationDelay: `${i * 0.3}s`,
-        }}
-      >
-        <svg width="20" height="80" viewBox="0 0 20 80" className="opacity-40">
-          <path d="M10 80 Q5 60 10 50 Q15 40 10 30 Q5 20 10 10 Q12 5 10 0" 
-                stroke="hsl(140, 60%, 40%)" strokeWidth="4" fill="none" strokeLinecap="round" />
-        </svg>
-      </div>
-    ))}
-    {/* Light rays */}
-    <div className="absolute inset-0 bg-gradient-to-b from-cyan-400/10 via-transparent to-blue-900/20" />
-  </>
-);
 
 // Desert Theme - Sand dunes and cacti (CSS only)
 const DesertElements = () => (
@@ -284,48 +223,6 @@ const NeonElements = () => (
   </>
 );
 
-// Sunset Theme - Gradient sky, clouds, birds (SVG)
-const SunsetElements = () => (
-  <>
-    {/* Sky gradient */}
-    <div className="absolute inset-0 bg-gradient-to-b from-orange-500/10 via-pink-500/10 to-indigo-600/10" />
-    {/* Sun */}
-    <div className="absolute top-20 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full bg-gradient-to-b from-yellow-300/30 to-orange-500/20 blur-2xl" />
-    {/* Clouds */}
-    {[...Array(5)].map((_, i) => (
-      <div
-        key={`cloud-${i}`}
-        className="absolute animate-cloud-drift"
-        style={{
-          top: `${10 + i * 8}%`,
-          animationDuration: `${40 + i * 10}s`,
-          animationDelay: `${i * 5}s`,
-        }}
-      >
-        <div className="flex gap-1 opacity-30">
-          <div className="w-16 h-8 rounded-full bg-orange-200/50" />
-          <div className="w-20 h-10 rounded-full bg-orange-200/50 -mt-2" />
-          <div className="w-14 h-7 rounded-full bg-orange-200/50" />
-        </div>
-      </div>
-    ))}
-    {/* Flying birds (SVG) */}
-    {[...Array(4)].map((_, i) => (
-      <div
-        key={`bird-${i}`}
-        className="absolute animate-bird-fly opacity-40"
-        style={{
-          top: `${20 + i * 10}%`,
-          animationDelay: `${i * 3}s`,
-        }}
-      >
-        <svg width="24" height="12" viewBox="0 0 24 12">
-          <path d="M0 6 Q6 0 12 6 Q18 0 24 6" stroke="hsl(0, 0%, 20%)" strokeWidth="2" fill="none" />
-        </svg>
-      </div>
-    ))}
-  </>
-);
 
 // Arctic Theme - Snowflakes (CSS shapes, no gem emoji)
 const ArcticElements = () => (
