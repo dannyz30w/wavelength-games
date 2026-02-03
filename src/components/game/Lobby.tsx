@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 interface LobbyProps {
   onCreateRoom: (name: string, isPrivate: boolean) => Promise<string | null>;
-  onJoinRoom: (code: string, name: string) => Promise<boolean>;
+  onJoinRoom: (code: string, name: string, password?: string) => Promise<boolean>;
   isLoading: boolean;
 }
 
@@ -19,6 +19,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   const { playSound } = useSoundEffects();
   const [playerName, setPlayerName] = useState("");
   const [roomCode, setRoomCode] = useState("");
+  const [roomPassword, setRoomPassword] = useState("");
   const [mode, setMode] = useState<"initial" | "create" | "join">("initial");
   const [isPrivate, setIsPrivate] = useState(false);
 
@@ -32,7 +33,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   const handleJoin = async () => {
     if (!playerName.trim() || !roomCode.trim()) return;
     playSound("submit");
-    const result = await onJoinRoom(roomCode.trim(), playerName.trim());
+    const result = await onJoinRoom(roomCode.trim(), playerName.trim(), roomPassword.trim() || undefined);
     if (result) playSound("join");
     else playSound("error");
   };
@@ -40,11 +41,17 @@ export const Lobby: React.FC<LobbyProps> = ({
   const handleModeChange = (newMode: "initial" | "create" | "join") => {
     playSound("pop");
     setMode(newMode);
+    setRoomPassword("");
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
+        
+        {/* Title */}
+        <h1 className="text-4xl font-bold text-center mb-6 text-foreground tracking-tight">
+          Wavelength
+        </h1>
 
         {/* Main Panel */}
         <div className="game-card p-6 animate-slide-up stagger-1">
@@ -159,6 +166,19 @@ export const Lobby: React.FC<LobbyProps> = ({
                   placeholder="XXXX"
                   maxLength={4}
                   className="game-input h-14 text-center text-2xl tracking-[0.4em] uppercase font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  Password <span className="text-muted-foreground/50">(if private)</span>
+                </label>
+                <Input
+                  value={roomPassword}
+                  onChange={(e) => setRoomPassword(e.target.value)}
+                  placeholder="Enter password"
+                  maxLength={4}
+                  className="game-input h-12 text-center text-xl tracking-[0.3em] font-mono"
                 />
               </div>
 

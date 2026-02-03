@@ -327,17 +327,15 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
                 fill="hsl(215, 80%, 60%)"
               />
               
-              {/* Needle tip with pulse on drag */}
+              {/* Needle tip - static, no animation */}
               <circle
                 cx={200 + needleLength * Math.cos(needleRad)}
                 cy={200 - needleLength * Math.sin(needleRad)}
-                r={isDragging ? 14 : 11}
+                r="11"
                 fill="hsl(0, 0%, 100%)"
                 className={cn(
-                  "transition-all duration-150",
                   isDraggable && "cursor-grab active:cursor-grabbing"
                 )}
-                filter={isDragging ? "url(#strongGlow)" : undefined}
               />
               <circle
                 cx={200 + needleLength * Math.cos(needleRad)}

@@ -12,16 +12,13 @@ import {
   Target, 
   Send, 
   ArrowLeft, 
-  ArrowRight,
   Check,
-  Trophy,
   Sparkles,
   Copy,
   EyeOff,
   Zap,
   Star,
   Flame,
-  PartyPopper,
   Rocket
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -63,6 +60,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
   const [phaseTransition, setPhaseTransition] = useState(false);
   const [pulseEffect, setPulseEffect] = useState(false);
   const [celebrationLevel, setCelebrationLevel] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
   const roundCountRef = useRef(0);
   const hasAutoStartedRef = useRef(false);
   
@@ -374,13 +372,37 @@ export const GameRoom: React.FC<GameRoomProps> = ({
           Leave
         </Button>
         
-        <button
-          onClick={copyRoomCode}
-          className="game-card flex items-center gap-2 px-4 py-2.5 hover:border-primary/50 active:scale-95 transition-spring group"
-        >
-          <span className="text-lg font-bold tracking-widest group-hover:text-primary transition-colors">{room.code}</span>
-          <Copy className="w-4 h-4 text-muted-foreground group-hover:scale-110 transition-transform" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={copyRoomCode}
+            className="game-card flex items-center gap-2 px-4 py-2.5 hover:border-primary/50 active:scale-95 transition-spring group"
+          >
+            <span className="text-lg font-bold tracking-widest group-hover:text-primary transition-colors">{room.code}</span>
+            <Copy className="w-4 h-4 text-muted-foreground group-hover:scale-110 transition-transform" />
+          </button>
+          
+          {room.is_private && room.password && (
+            <button
+              onClick={() => {
+                playSound("click");
+                setShowPassword(!showPassword);
+              }}
+              className="game-card flex items-center gap-2 px-3 py-2.5 hover:border-primary/50 active:scale-95 transition-spring group"
+            >
+              {showPassword ? (
+                <>
+                  <span className="text-sm font-mono font-bold text-primary tracking-wider">{room.password}</span>
+                  <EyeOff className="w-4 h-4 text-muted-foreground" />
+                </>
+              ) : (
+                <>
+                  <span className="text-xs text-muted-foreground">Password</span>
+                  <Eye className="w-4 h-4 text-muted-foreground group-hover:scale-110 transition-transform" />
+                </>
+              )}
+            </button>
+          )}
+        </div>
 
         <div className="w-20" />
       </header>

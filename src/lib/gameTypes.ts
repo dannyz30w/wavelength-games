@@ -9,6 +9,7 @@ export interface Room {
   status: RoomStatus;
   mode: string;
   is_private: boolean;
+  password: string | null;
   created_at: string;
   updated_at: string;
 }
