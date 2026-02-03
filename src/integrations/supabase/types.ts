@@ -63,6 +63,7 @@ export type Database = {
           id: string
           is_private: boolean
           mode: string
+          password: string | null
           status: Database["public"]["Enums"]["room_status"]
           updated_at: string
         }
@@ -73,6 +74,7 @@ export type Database = {
           id?: string
           is_private?: boolean
           mode?: string
+          password?: string | null
           status?: Database["public"]["Enums"]["room_status"]
           updated_at?: string
         }
@@ -83,6 +85,7 @@ export type Database = {
           id?: string
           is_private?: boolean
           mode?: string
+          password?: string | null
           status?: Database["public"]["Enums"]["room_status"]
           updated_at?: string
         }
