@@ -5,6 +5,7 @@ import { SemicircleSpectrum } from "./SemicircleSpectrum";
 import { GameHistory } from "./GameHistory";
 import { GameState } from "@/lib/gameTypes";
 import { useRoundHistory } from "@/hooks/useRoundHistory";
+import { useNeedleSync } from "@/hooks/useNeedleSync";
 import { 
   Users, 
   Crown, 
@@ -61,11 +62,24 @@ export const GameRoom: React.FC<GameRoomProps> = ({
   const [pulseEffect, setPulseEffect] = useState(false);
   const [celebrationLevel, setCelebrationLevel] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
+  const [revealNeedleAngle, setRevealNeedleAngle] = useState<number | null>(null);
   const roundCountRef = useRef(0);
   const hasAutoStartedRef = useRef(false);
   
   const { room, players, currentRound, myPlayer } = gameState;
   const { rounds } = useRoundHistory(room?.id);
+  
+  // Determine roles before hook calls (for useNeedleSync)
+  const isGuesser = currentRound?.guesser_id === playerId;
+  const isClueGiver = currentRound?.psychic_id === playerId;
+  
+  // Real-time needle sync - clue giver sees guesser's needle movement
+  const { remoteNeedleAngle, broadcastNeedlePosition } = useNeedleSync({
+    roomId: room?.id,
+    roundId: currentRound?.id,
+    isGuesser: isGuesser,
+    playerId,
+  });
   
   // Track round count for auto-alternation
   useEffect(() => {
@@ -74,20 +88,34 @@ export const GameRoom: React.FC<GameRoomProps> = ({
     }
   }, [currentRound?.round_number]);
   
-  // Reset targetHidden when round changes
+  // Reset state when round changes
   useEffect(() => {
     setTargetHidden(false);
     setNeedleAngle(90);
+    setRevealNeedleAngle(null);
     hasAutoStartedRef.current = false;
   }, [currentRound?.id]);
   
-  // Phase transition effect
+  // Phase transition effect - smoother timing
   useEffect(() => {
     if (currentRound?.phase) {
       setPhaseTransition(true);
-      setTimeout(() => setPhaseTransition(false), 600);
+      const timer = setTimeout(() => setPhaseTransition(false), 400);
+      return () => clearTimeout(timer);
     }
   }, [currentRound?.phase]);
+  
+  // Smooth reveal animation - animate needle to final position
+  useEffect(() => {
+    if (currentRound?.phase === "reveal" && currentRound.guess_value !== null) {
+      const targetAngle = (currentRound.guess_value / 100) * 180;
+      // Small delay then animate to position
+      const timer = setTimeout(() => {
+        setRevealNeedleAngle(targetAngle);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [currentRound?.phase, currentRound?.guess_value]);
   
   // Play sound and show effects on phase changes
   useEffect(() => {
@@ -132,8 +160,6 @@ export const GameRoom: React.FC<GameRoomProps> = ({
   
   if (!room || !myPlayer) return null;
 
-  const isClueGiver = currentRound?.psychic_id === playerId;
-  const isGuesser = currentRound?.guesser_id === playerId;
   const canStartRound = players.length >= 2;
   const isWaitingPhase = !currentRound || currentRound.phase === "complete" || currentRound.phase === "waiting";
   const showScores = players.length > 2;
@@ -650,8 +676,11 @@ export const GameRoom: React.FC<GameRoomProps> = ({
               <SemicircleSpectrum
                 leftLabel={currentRound.left_extreme}
                 rightLabel={currentRound.right_extreme}
-                needleAngle={needleAngle}
-                onNeedleChange={setNeedleAngle}
+                needleAngle={isGuesser ? needleAngle : remoteNeedleAngle}
+                onNeedleChange={(angle) => {
+                  setNeedleAngle(angle);
+                  broadcastNeedlePosition(angle);
+                }}
                 isDraggable={isGuesser}
               />
             </div>
@@ -671,19 +700,13 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                 </Button>
               </div>
             ) : (
-              <div className="text-center animate-pulse-soft">
-                <p className="text-muted-foreground text-sm">
-                  Waiting for the guesser...
+              <div className="text-center">
+                <p className="text-muted-foreground text-sm mb-2">
+                  Watching the guesser...
                 </p>
-                <div className="flex justify-center gap-1 mt-3">
-                  {[...Array(3)].map((_, i) => (
-                    <div 
-                      key={i} 
-                      className="w-2 h-2 rounded-full bg-primary animate-bounce"
-                      style={{ animationDelay: `${i * 0.15}s` }}
-                    />
-                  ))}
-                </div>
+                <p className="text-xs text-primary animate-pulse">
+                  You can see their needle in real-time!
+                </p>
               </div>
             )}
           </div>
@@ -691,17 +714,17 @@ export const GameRoom: React.FC<GameRoomProps> = ({
 
         {/* Reveal Phase */}
         {currentRound?.phase === "reveal" && (
-          <div className="w-full max-w-md space-y-6 animate-reveal-burst">
+          <div className="w-full max-w-md space-y-6 animate-fade-in">
             <div className="text-center game-card p-3">
               <p className="text-sm text-muted-foreground">Clue: "{currentRound.clue}"</p>
             </div>
 
-            <div className="animate-spectrum-reveal">
+            <div className="transition-all duration-700 ease-out">
               <SemicircleSpectrum
                 leftLabel={currentRound.left_extreme}
                 rightLabel={currentRound.right_extreme}
                 targetCenter={currentRound.target_center ? getTargetAngle(currentRound.target_center) : undefined}
-                needleAngle={currentRound.guess_value !== null ? (currentRound.guess_value / 100) * 180 : 90}
+                needleAngle={revealNeedleAngle ?? (currentRound.guess_value !== null ? (currentRound.guess_value / 100) * 180 : 90)}
                 showReveal={true}
               />
             </div>

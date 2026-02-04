@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      matchmaking_queue: {
+        Row: {
+          created_at: string
+          id: string
+          matched_room_id: string | null
+          player_id: string
+          player_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          matched_room_id?: string | null
+          player_id: string
+          player_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          matched_room_id?: string | null
+          player_id?: string
+          player_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matchmaking_queue_matched_room_id_fkey"
+            columns: ["matched_room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           id: string
