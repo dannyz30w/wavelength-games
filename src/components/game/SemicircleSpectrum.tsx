@@ -286,7 +286,10 @@ export const SemicircleSpectrum: React.FC<SemicircleSpectrumProps> = ({
 
           {/* Needle with enhanced design */}
           {(isDraggable || needleAngle !== undefined) && (
-            <g className={cn(!isDragging && "transition-all duration-300 ease-out")}>
+            <g className={cn(
+              !isDragging && "transition-all ease-out",
+              showReveal ? "duration-700" : "duration-300"
+            )}>
               {/* Needle shadow */}
               <line
                 x1="200"
