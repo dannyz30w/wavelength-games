@@ -317,9 +317,7 @@ export const useGameState = () => {
       const target = generateTarget();
       const extremes = getRandomExtremes();
       
-      const otherPlayers = gameState.players.filter(p => p.player_id !== playerId);
-      
-      if (otherPlayers.length === 0) {
+      if (gameState.players.length < 2) {
         toast({
           title: "Need 2+ Players",
           description: "Wait for another player to join",
@@ -329,92 +327,50 @@ export const useGameState = () => {
         return;
       }
 
-      // Fetch ALL rounds for this room to understand role history
-      const { data: allRounds } = await supabase
+      // Get the last round to determine role swap
+      const { data: lastRoundData } = await supabase
         .from("rounds")
         .select("round_number, psychic_id, guesser_id")
         .eq("room_id", gameState.room.id)
-        .order("round_number", { ascending: true });
+        .order("round_number", { ascending: false })
+        .limit(1);
 
-      const roundNumber = allRounds && allRounds.length > 0 
-        ? allRounds[allRounds.length - 1].round_number + 1 
-        : 1;
+      const lastRound = lastRoundData?.[0];
+      const roundNumber = lastRound ? lastRound.round_number + 1 : 1;
 
-      // Get all player IDs and sort them for consistent ordering
-      const allPlayerIds = [...gameState.players.map(p => p.player_id)].sort();
-      const numPlayers = allPlayerIds.length;
-      
-      // Build a role history per player: track their last role
-      const lastRoleMap: Record<string, 'psychic' | 'guesser' | null> = {};
-      allPlayerIds.forEach(pid => lastRoleMap[pid] = null);
-      
-      if (allRounds && allRounds.length > 0) {
-        // Go through rounds and track each player's most recent role
-        for (const round of allRounds) {
-          if (round.psychic_id) lastRoleMap[round.psychic_id] = 'psychic';
-          if (round.guesser_id) lastRoleMap[round.guesser_id] = 'guesser';
-        }
-      }
-
-      // Find players who were guessers last time (they should give clues now)
-      // Find players who were clue givers last time (they should guess now)
-      const lastGuessers = allPlayerIds.filter(pid => lastRoleMap[pid] === 'guesser');
-      const lastPsychics = allPlayerIds.filter(pid => lastRoleMap[pid] === 'psychic');
-      const noRoleYet = allPlayerIds.filter(pid => lastRoleMap[pid] === null);
+      // Sort player IDs for consistent ordering
+      const sortedPlayerIds = [...gameState.players.map(p => p.player_id)].sort();
       
       let clueGiverId: string;
       let guesserId: string;
       
-      if (numPlayers === 2) {
-        // Simple 2-player alternation
-        // Whoever guessed last should now give the clue
-        // Whoever gave the clue last should now guess
-        if (allRounds && allRounds.length > 0) {
-          const lastRound = allRounds[allRounds.length - 1];
-          // The last guesser becomes the new clue giver
-          clueGiverId = lastRound.guesser_id || allPlayerIds[0];
-          // The last clue giver becomes the new guesser
-          guesserId = lastRound.psychic_id || allPlayerIds[1];
-        } else {
-          // First round - pick arbitrarily
-          clueGiverId = allPlayerIds[0];
-          guesserId = allPlayerIds[1];
-        }
+      if (!lastRound) {
+        // First round - pick first two players
+        clueGiverId = sortedPlayerIds[0];
+        guesserId = sortedPlayerIds[1];
       } else {
-        // Multi-player: rotate through players, ensuring alternation
-        // Priority: pick someone who was a guesser last (or has no role yet) to be clue giver
-        // Then pick someone who was a clue giver last (or has no role yet) to be guesser
+        // STRICT SWAP: whoever was psychic becomes guesser, whoever was guesser becomes psychic
+        clueGiverId = lastRound.guesser_id || sortedPlayerIds[0];
+        guesserId = lastRound.psychic_id || sortedPlayerIds[1];
         
-        // For clue giver: prefer someone who guessed last or hasn't played
-        const clueGiverCandidates = [...lastGuessers, ...noRoleYet];
-        if (clueGiverCandidates.length > 0) {
-          // Use round number for rotation within candidates
-          clueGiverId = clueGiverCandidates[(roundNumber - 1) % clueGiverCandidates.length];
-        } else {
-          // Fallback: just rotate through all players
-          clueGiverId = allPlayerIds[(roundNumber - 1) % numPlayers];
+        // Validate both players still exist
+        if (!sortedPlayerIds.includes(clueGiverId)) {
+          clueGiverId = sortedPlayerIds[0];
         }
-        
-        // For guesser: prefer someone who gave clue last or hasn't played, but not the clue giver
-        const guesserCandidates = [...lastPsychics, ...noRoleYet].filter(pid => pid !== clueGiverId);
-        if (guesserCandidates.length > 0) {
-          guesserId = guesserCandidates[(roundNumber - 1) % guesserCandidates.length];
-        } else {
-          // Fallback: pick someone different from clue giver
-          const otherPlayers = allPlayerIds.filter(pid => pid !== clueGiverId);
-          guesserId = otherPlayers[(roundNumber - 1) % otherPlayers.length];
+        if (!sortedPlayerIds.includes(guesserId) || guesserId === clueGiverId) {
+          guesserId = sortedPlayerIds.find(id => id !== clueGiverId) || sortedPlayerIds[1];
         }
       }
 
-      // Update all players' roles
-      for (const player of gameState.players) {
-        const role: PlayerRole = player.player_id === clueGiverId ? "psychic" : "guesser";
-        await supabase
+      // Batch update all player roles
+      const roleUpdates = gameState.players.map(player => 
+        supabase
           .from("players")
-          .update({ role })
-          .eq("room_id", gameState.room.id)
-          .eq("player_id", player.player_id);
-      }
+          .update({ role: player.player_id === clueGiverId ? "psychic" : "guesser" as PlayerRole })
+          .eq("room_id", gameState.room!.id)
+          .eq("player_id", player.player_id)
+      );
+      await Promise.all(roleUpdates);
 
       const { error: roundError } = await supabase
         .from("rounds")
@@ -428,9 +384,7 @@ export const useGameState = () => {
           left_extreme: extremes.left,
           right_extreme: extremes.right,
           guesser_id: guesserId,
-        })
-        .select()
-        .single();
+        });
 
       if (roundError) throw roundError;
 
@@ -439,10 +393,9 @@ export const useGameState = () => {
         .update({ status: "playing" })
         .eq("id", gameState.room.id);
 
-      const isClueGiver = clueGiverId === playerId;
       toast({
         title: `Round ${roundNumber}`,
-        description: isClueGiver ? "Your turn to give a clue!" : "Get ready to guess!",
+        description: clueGiverId === playerId ? "Your turn to give a clue!" : "Get ready to guess!",
       });
     } catch (error) {
       console.error("Error starting round:", error);
