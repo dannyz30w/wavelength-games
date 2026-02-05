@@ -34,15 +34,17 @@ export const useGameState = () => {
   useEffect(() => {
     if (!gameState.room?.id) return;
 
+    const roomId = gameState.room.id;
+
     const roomChannel = supabase
-      .channel(`room-${gameState.room.id}`)
+      .channel(`room-${roomId}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "rooms",
-          filter: `id=eq.${gameState.room.id}`,
+          filter: `id=eq.${roomId}`,
         },
         (payload) => {
           if (payload.eventType === "UPDATE") {
@@ -59,7 +61,7 @@ export const useGameState = () => {
           event: "*",
           schema: "public",
           table: "players",
-          filter: `room_id=eq.${gameState.room.id}`,
+          filter: `room_id=eq.${roomId}`,
         },
         async (payload) => {
           // Check if current player was kicked
@@ -85,7 +87,7 @@ export const useGameState = () => {
           const { data: players } = await supabase
             .from("players")
             .select("*")
-            .eq("room_id", gameState.room!.id);
+            .eq("room_id", roomId);
           
           if (players) {
             const myPlayer = players.find((p) => p.player_id === playerId) || null;
@@ -103,13 +105,13 @@ export const useGameState = () => {
           event: "*",
           schema: "public",
           table: "rounds",
-          filter: `room_id=eq.${gameState.room.id}`,
+          filter: `room_id=eq.${roomId}`,
         },
         async () => {
           const { data: rounds } = await supabase
             .from("rounds")
             .select("*")
-            .eq("room_id", gameState.room!.id)
+            .eq("room_id", roomId)
             .order("round_number", { ascending: false })
             .limit(1);
           
@@ -123,8 +125,42 @@ export const useGameState = () => {
       )
       .subscribe();
 
+    // Polling fallback: fixes cases where realtime updates don't arrive (e.g. opponent never loads)
+    const pollId = window.setInterval(async () => {
+      try {
+        const [{ data: players }, { data: rounds }] = await Promise.all([
+          supabase.from("players").select("*").eq("room_id", roomId),
+          supabase
+            .from("rounds")
+            .select("*")
+            .eq("room_id", roomId)
+            .order("round_number", { ascending: false })
+            .limit(1),
+        ]);
+
+        if (players) {
+          const myPlayer = players.find((p) => p.player_id === playerId) || null;
+          setGameState((prev) => ({
+            ...prev,
+            players: players as Player[],
+            myPlayer: myPlayer as Player | null,
+          }));
+        }
+
+        if (rounds && rounds.length > 0) {
+          setGameState((prev) => ({
+            ...prev,
+            currentRound: rounds[0] as Round,
+          }));
+        }
+      } catch (e) {
+        console.warn("Polling sync failed:", e);
+      }
+    }, 2500);
+
     return () => {
       supabase.removeChannel(roomChannel);
+      clearInterval(pollId);
     };
   }, [gameState.room?.id, playerId, toast]);
 
