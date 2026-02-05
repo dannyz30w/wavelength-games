@@ -24,15 +24,22 @@ export const Lobby: React.FC<LobbyProps> = ({
   const [roomPassword, setRoomPassword] = useState("");
   const [mode, setMode] = useState<"initial" | "create" | "join" | "matchmaking">("initial");
   const [isPrivate, setIsPrivate] = useState(false);
+  const joinAttemptedRef = React.useRef(false);
 
   // Handle matchmaking completion
   useEffect(() => {
-    if (matchmaking.status === "matched" && matchmaking.roomCode && playerName.trim()) {
+    // Use playerName from matchmaking state (saved when search started) as fallback
+    const nameToUse = playerName.trim() || matchmaking.playerName;
+    
+    if (matchmaking.status === "matched" && matchmaking.roomCode && nameToUse && !joinAttemptedRef.current) {
+      joinAttemptedRef.current = true;
       playSound("success");
-      onJoinRoom(matchmaking.roomCode, playerName.trim());
-      matchmaking.reset();
+      onJoinRoom(matchmaking.roomCode, nameToUse).finally(() => {
+        matchmaking.reset();
+        joinAttemptedRef.current = false;
+      });
     }
-  }, [matchmaking.status, matchmaking.roomCode, playerName, onJoinRoom, playSound, matchmaking.reset]);
+  }, [matchmaking.status, matchmaking.roomCode, playerName, matchmaking.playerName, onJoinRoom, playSound, matchmaking.reset]);
 
   const handleCreate = async () => {
     if (!playerName.trim()) return;

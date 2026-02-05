@@ -7,6 +7,7 @@ interface MatchmakingState {
   status: "idle" | "searching" | "matched" | "error";
   roomCode: string | null;
   elapsedTime: number;
+  playerName: string | null;
 }
 
 const getStoredPlayerId = (): string => {
@@ -24,11 +25,13 @@ export const useMatchmaking = () => {
     status: "idle",
     roomCode: null,
     elapsedTime: 0,
+    playerName: null,
   });
   const [playerId] = useState(getStoredPlayerId);
   const timerRef = useRef<number | null>(null);
   const queueIdRef = useRef<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const pollingRef = useRef<number | null>(null);
 
   // Cleanup function
   const cleanup = useCallback(async () => {
@@ -40,11 +43,15 @@ export const useMatchmaking = () => {
       await supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
   }, []);
 
   // Start searching for a match
   const startSearch = useCallback(async (playerName: string) => {
-    setState({ status: "searching", roomCode: null, elapsedTime: 0 });
+    setState({ status: "searching", roomCode: null, elapsedTime: 0, playerName });
 
     try {
       // First, cancel any existing queue entries
@@ -72,6 +79,16 @@ export const useMatchmaking = () => {
       timerRef.current = window.setInterval(() => {
         setState(prev => ({ ...prev, elapsedTime: prev.elapsedTime + 1 }));
       }, 1000);
+
+      // Helper to complete match
+      const completeMatch = async (roomCode: string) => {
+        cleanup();
+        setState({ status: "matched", roomCode, elapsedTime: 0, playerName });
+        toast({
+          title: "Match Found!",
+          description: "Joining game...",
+        });
+      };
 
       // Check for another waiting player
       const { data: waitingPlayers } = await supabase
@@ -113,14 +130,24 @@ export const useMatchmaking = () => {
             .eq("id", otherPlayer.id),
         ]);
 
-        cleanup();
-        setState({ status: "matched", roomCode, elapsedTime: 0 });
-        toast({
-          title: "Match Found!",
-          description: "Joining game...",
-        });
+        await completeMatch(roomCode);
         return;
       }
+
+      // Polling fallback - check every 2 seconds if we got matched
+      pollingRef.current = window.setInterval(async () => {
+        if (!queueIdRef.current) return;
+        
+        const { data: myEntry } = await supabase
+          .from("matchmaking_queue")
+          .select("*, rooms!matchmaking_queue_matched_room_id_fkey(code)")
+          .eq("id", queueIdRef.current)
+          .single();
+        
+        if (myEntry?.status === "matched" && myEntry.rooms?.code) {
+          await completeMatch(myEntry.rooms.code);
+        }
+      }, 2000);
 
       // Subscribe to queue changes to detect when matched
       channelRef.current = supabase
@@ -144,21 +171,11 @@ export const useMatchmaking = () => {
                 .single();
 
               if (room) {
-                cleanup();
-                setState({ status: "matched", roomCode: room.code, elapsedTime: 0 });
-                toast({
-                  title: "Match Found!",
-                  description: "Joining game...",
-                });
+                await completeMatch(room.code);
               }
             }
           }
         )
-        .subscribe();
-
-      // Also listen for new queue entries (in case we need to match them)
-      const matchChannel = supabase
-        .channel(`matchmaking-new-${playerId}`)
         .on(
           "postgres_changes",
           {
@@ -202,12 +219,7 @@ export const useMatchmaking = () => {
                       .eq("id", newEntry.id),
                   ]);
 
-                  cleanup();
-                  setState({ status: "matched", roomCode, elapsedTime: 0 });
-                  toast({
-                    title: "Match Found!",
-                    description: "Joining game...",
-                  });
+                  await completeMatch(roomCode);
                 }
               }
             }
@@ -215,14 +227,10 @@ export const useMatchmaking = () => {
         )
         .subscribe();
 
-      // Store for cleanup
-      const originalCleanup = cleanup;
-      channelRef.current = matchChannel;
-
     } catch (error) {
       console.error("Matchmaking error:", error);
       cleanup();
-      setState({ status: "error", roomCode: null, elapsedTime: 0 });
+      setState({ status: "error", roomCode: null, elapsedTime: 0, playerName: null });
       toast({
         title: "Error",
         description: "Failed to start matchmaking",
@@ -240,13 +248,13 @@ export const useMatchmaking = () => {
         .eq("id", queueIdRef.current);
     }
     cleanup();
-    setState({ status: "idle", roomCode: null, elapsedTime: 0 });
+    setState({ status: "idle", roomCode: null, elapsedTime: 0, playerName: null });
   }, [cleanup]);
 
   // Reset state
   const reset = useCallback(() => {
     cleanup();
-    setState({ status: "idle", roomCode: null, elapsedTime: 0 });
+    setState({ status: "idle", roomCode: null, elapsedTime: 0, playerName: null });
   }, [cleanup]);
 
   // Cleanup on unmount

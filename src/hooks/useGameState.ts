@@ -311,6 +311,7 @@ export const useGameState = () => {
 
   const startRound = useCallback(async () => {
     if (!gameState.room || !gameState.myPlayer) return;
+    if (isLoading) return; // Prevent double-starts
     
     setIsLoading(true);
     try {
@@ -323,6 +324,20 @@ export const useGameState = () => {
           description: "Wait for another player to join",
           variant: "destructive",
         });
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if a round is already in progress to prevent race conditions
+      const { data: existingActiveRound } = await supabase
+        .from("rounds")
+        .select("id, phase")
+        .eq("room_id", gameState.room.id)
+        .in("phase", ["clue_giving", "guessing", "reveal"])
+        .limit(1);
+      
+      if (existingActiveRound && existingActiveRound.length > 0) {
+        // Round already started by other player - silently skip
         setIsLoading(false);
         return;
       }
@@ -397,17 +412,22 @@ export const useGameState = () => {
         title: `Round ${roundNumber}`,
         description: clueGiverId === playerId ? "Your turn to give a clue!" : "Get ready to guess!",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error starting round:", error);
-      toast({
-        title: "Error",
-        description: "Failed to start round",
-        variant: "destructive",
-      });
+      // Only show error toast for actual errors, not race condition duplicates
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      // Supabase unique constraint violations are expected during race conditions
+      if (!errorMessage.includes("duplicate") && !errorMessage.includes("unique")) {
+        toast({
+          title: "Error",
+          description: "Failed to start round",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [gameState.room, gameState.myPlayer, gameState.players, playerId, toast]);
+  }, [gameState.room, gameState.myPlayer, gameState.players, playerId, toast, isLoading]);
 
   const submitClue = useCallback(async (clue: string) => {
     if (!gameState.currentRound) return;
