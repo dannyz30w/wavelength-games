@@ -381,6 +381,10 @@
     animation: fade-in 0.4s ease-out;
   }
 
+  .animate-reveal-smooth {
+    animation: reveal-smooth 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
   /* Stagger delays */
   .stagger-1 { animation-delay: 0.05s; }
   .stagger-2 { animation-delay: 0.1s; }
@@ -444,6 +448,17 @@
   }
   70% {
     transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes reveal-smooth {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
   }
   100% {
     transform: scale(1);
