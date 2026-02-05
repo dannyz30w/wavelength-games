@@ -157,14 +157,36 @@ export const GameRoom: React.FC<GameRoomProps> = ({
       playSound("magic");
     }
   }, [currentRound?.phase, currentRound?.points_awarded, playSound]);
-  
-  if (!room || !myPlayer) return null;
 
   const canStartRound = players.length >= 2;
   const isWaitingPhase = !currentRound || currentRound.phase === "complete" || currentRound.phase === "waiting";
   const showScores = players.length > 2;
   const is1v1 = players.length === 2;
   const hasPlayedBefore = roundCountRef.current > 0;
+
+  // Auto-advance to next round after reveal, then auto-start for 1v1
+  useEffect(() => {
+    if (currentRound?.phase === "reveal") {
+      const timer = setTimeout(() => {
+        onNextRound();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentRound?.phase, onNextRound]);
+
+  // Auto-start next round for 1v1 after first round
+  useEffect(() => {
+    if (is1v1 && hasPlayedBefore && isWaitingPhase && canStartRound && !hasAutoStartedRef.current && !isLoading) {
+      hasAutoStartedRef.current = true;
+      const timer = setTimeout(() => {
+        playSound("whoosh");
+        onStartRound();
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [is1v1, hasPlayedBefore, isWaitingPhase, canStartRound, isLoading, onStartRound, playSound]);
+
+  if (!room || !myPlayer) return null;
 
   const copyRoomCode = () => {
     navigator.clipboard.writeText(room.code);
@@ -213,28 +235,6 @@ export const GameRoom: React.FC<GameRoomProps> = ({
     return { text: "Nice!", color: "text-primary", icon: Sparkles };
   };
 
-  // Auto-advance to next round after reveal, then auto-start for 1v1
-  useEffect(() => {
-    if (currentRound?.phase === "reveal") {
-      const timer = setTimeout(() => {
-        onNextRound();
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [currentRound?.phase, onNextRound]);
-
-  // Auto-start next round for 1v1 after first round
-  useEffect(() => {
-    if (is1v1 && hasPlayedBefore && isWaitingPhase && canStartRound && !hasAutoStartedRef.current && !isLoading) {
-      hasAutoStartedRef.current = true;
-      const timer = setTimeout(() => {
-        playSound("whoosh");
-        onStartRound();
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [is1v1, hasPlayedBefore, isWaitingPhase, canStartRound, isLoading, onStartRound, playSound]);
-
   return (
     <div className={cn(
       "min-h-screen flex flex-col p-4 md:p-6 overflow-hidden",
@@ -243,7 +243,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
       {/* Confetti effect - Enhanced */}
       {showConfetti && (
         <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-          {[...Array(60)].map((_, i) => (
+          {[...Array(24)].map((_, i) => (
             <div
               key={i}
               className="absolute animate-confetti-explosion"
@@ -274,7 +274,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
       {showStarburst && (
         <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
           <div className="relative">
-            {[...Array(16)].map((_, i) => (
+            {[...Array(10)].map((_, i) => (
               <div
                 key={i}
                 className="absolute animate-starburst-ray"
@@ -295,7 +295,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
       {/* Rocket trails effect */}
       {showRocketTrails && (
         <div className="fixed inset-0 pointer-events-none z-40 overflow-hidden">
-          {[...Array(6)].map((_, i) => (
+          {[...Array(3)].map((_, i) => (
             <div
               key={i}
               className="absolute animate-rocket-launch"
@@ -315,7 +315,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
       {/* Fireworks effect for bullseye */}
       {showFireworks && (
         <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-          {[...Array(8)].map((_, burstIndex) => (
+          {[...Array(4)].map((_, burstIndex) => (
             <div 
               key={burstIndex}
               className="absolute animate-firework-burst"
@@ -325,7 +325,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
                 animationDelay: `${burstIndex * 0.15}s`,
               }}
             >
-              {[...Array(16)].map((_, i) => (
+              {[...Array(12)].map((_, i) => (
                 <div
                   key={i}
                   className="absolute w-2 h-2 rounded-full animate-firework-particle-enhanced"
@@ -345,7 +345,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
       {/* Sparkle overlay for any celebration */}
       {celebrationLevel > 0 && (
         <div className="fixed inset-0 pointer-events-none z-45 overflow-hidden">
-          {[...Array(30)].map((_, i) => (
+          {[...Array(12)].map((_, i) => (
             <div
               key={i}
               className="absolute animate-sparkle-float"
@@ -370,7 +370,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({
 
       {/* Ambient floating particles */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-40">
-        {[...Array(12)].map((_, i) => (
+        {[...Array(8)].map((_, i) => (
           <div
             key={i}
             className="absolute rounded-full bg-primary/50 animate-float-particle"
