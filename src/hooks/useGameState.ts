@@ -493,15 +493,15 @@ export const useGameState = () => {
 
   const submitGuess = useCallback(async (guessValue: number) => {
     if (!gameState.currentRound || !gameState.room) return;
-    
+
     try {
       const round = gameState.currentRound;
       const targetCenter = round.target_center!;
       const targetWidth = round.target_width!;
-      
+
       const points = calculateScore(Math.round(guessValue), targetCenter, targetWidth);
-      
-      await supabase
+
+      const { error: roundError } = await supabase
         .from("rounds")
         .update({
           guess_value: Math.round(guessValue),
@@ -511,12 +511,17 @@ export const useGameState = () => {
         })
         .eq("id", gameState.currentRound.id);
 
-      const guesserPlayer = gameState.players.find(p => p.player_id === round.guesser_id);
+      if (roundError) throw roundError;
+
+      // Score update is best-effort; do not block reveal if it fails.
+      const guesserPlayer = gameState.players.find((p) => p.player_id === round.guesser_id);
       if (guesserPlayer) {
-        await supabase
+        const { error: scoreError } = await supabase
           .from("players")
           .update({ score: guesserPlayer.score + points })
           .eq("id", guesserPlayer.id);
+
+        if (scoreError) console.warn("Score update failed:", scoreError);
       }
 
       toast({
@@ -535,12 +540,14 @@ export const useGameState = () => {
 
   const nextRound = useCallback(async () => {
     if (!gameState.currentRound) return;
-    
+
     try {
-      await supabase
+      const { error } = await supabase
         .from("rounds")
         .update({ phase: "complete" as GamePhase })
         .eq("id", gameState.currentRound.id);
+
+      if (error) throw error;
 
       toast({
         title: "Round Complete!",

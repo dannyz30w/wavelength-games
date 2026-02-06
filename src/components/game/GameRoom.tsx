@@ -3,16 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SemicircleSpectrum } from "./SemicircleSpectrum";
 import { GameHistory } from "./GameHistory";
+import { CelebrationOverlay } from "./CelebrationOverlay";
 import { GameState } from "@/lib/gameTypes";
 import { useRoundHistory } from "@/hooks/useRoundHistory";
 import { useNeedleSync } from "@/hooks/useNeedleSync";
-import { 
-  Users, 
-  Crown, 
-  Eye, 
-  Target, 
-  Send, 
-  ArrowLeft, 
+import {
+  Users,
+  Crown,
+  Eye,
+  Target,
+  Send,
+  ArrowLeft,
   Check,
   Sparkles,
   Copy,
@@ -20,7 +21,6 @@ import {
   Zap,
   Star,
   Flame,
-  Rocket
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
@@ -54,18 +54,15 @@ export const GameRoom: React.FC<GameRoomProps> = ({
   const [clue, setClue] = useState("");
   const [needleAngle, setNeedleAngle] = useState(90);
   const [targetHidden, setTargetHidden] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [showFireworks, setShowFireworks] = useState(false);
-  const [showStarburst, setShowStarburst] = useState(false);
-  const [showRocketTrails, setShowRocketTrails] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationPoints, setCelebrationPoints] = useState(0);
   const [phaseTransition, setPhaseTransition] = useState(false);
   const [pulseEffect, setPulseEffect] = useState(false);
-  const [celebrationLevel, setCelebrationLevel] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [revealNeedleAngle, setRevealNeedleAngle] = useState<number | null>(null);
   const roundCountRef = useRef(0);
   const hasAutoStartedRef = useRef(false);
-  
+
   const { room, players, currentRound, myPlayer } = gameState;
   const { rounds } = useRoundHistory(room?.id);
   
@@ -117,37 +114,26 @@ export const GameRoom: React.FC<GameRoomProps> = ({
     }
   }, [currentRound?.phase, currentRound?.guess_value]);
   
-  // Play sound and show effects on phase changes
+  // Play sound and show effects on phase changes (kept intentionally light for performance)
   useEffect(() => {
     if (currentRound?.phase === "reveal") {
       playSound("reveal");
       const points = currentRound.points_awarded || 0;
-      
+
       if (points > 0) {
-        setShowConfetti(true);
-        setCelebrationLevel(points);
-        
-        if (points === 30) {
-          // BULLSEYE - Maximum celebration!
-          setShowFireworks(true);
-          setShowStarburst(true);
-          setShowRocketTrails(true);
-          playSound("success");
-        } else if (points === 20) {
-          // Close - Good celebration
-          setShowStarburst(true);
-          playSound("sparkle");
-        } else {
-          playSound("sparkle");
-        }
-        
-        setTimeout(() => {
-          setShowConfetti(false);
-          setShowFireworks(false);
-          setShowStarburst(false);
-          setShowRocketTrails(false);
-          setCelebrationLevel(0);
-        }, 3000);
+        setCelebrationPoints(points);
+        setShowCelebration(true);
+
+        // Keep audio feedback, but avoid heavy DOM effects.
+        if (points === 30) playSound("success");
+        else playSound("sparkle");
+
+        const t = window.setTimeout(() => {
+          setShowCelebration(false);
+          setCelebrationPoints(0);
+        }, 1800);
+
+        return () => window.clearTimeout(t);
       }
     } else if (currentRound?.phase === "guessing") {
       playSound("powerup");
@@ -174,17 +160,17 @@ export const GameRoom: React.FC<GameRoomProps> = ({
     }
   }, [currentRound?.phase, onNextRound]);
 
-  // Auto-start next round for 1v1 after first round
+  // Auto-start next round for 1v1 (including the very first round once the 2nd player joins)
   useEffect(() => {
-    if (is1v1 && hasPlayedBefore && isWaitingPhase && canStartRound && !hasAutoStartedRef.current && !isLoading) {
+    if (is1v1 && isWaitingPhase && canStartRound && !hasAutoStartedRef.current && !isLoading) {
       hasAutoStartedRef.current = true;
       const timer = setTimeout(() => {
         playSound("whoosh");
         onStartRound();
-      }, 800);
+      }, 600);
       return () => clearTimeout(timer);
     }
-  }, [is1v1, hasPlayedBefore, isWaitingPhase, canStartRound, isLoading, onStartRound, playSound]);
+  }, [is1v1, isWaitingPhase, canStartRound, isLoading, onStartRound, playSound]);
 
   if (!room || !myPlayer) return null;
 
@@ -240,147 +226,22 @@ export const GameRoom: React.FC<GameRoomProps> = ({
       "min-h-screen flex flex-col p-4 md:p-6 overflow-hidden",
       phaseTransition && "animate-phase-flash"
     )}>
-      {/* Confetti effect - Enhanced */}
-      {showConfetti && (
-        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-          {[...Array(24)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute animate-confetti-explosion"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: "50%",
-                animationDelay: `${Math.random() * 0.5}s`,
-                animationDuration: `${1 + Math.random() * 0.5}s`,
-              }}
-            >
-              <div 
-                className={cn(
-                  "rounded-sm",
-                  i % 3 === 0 ? "w-4 h-4" : i % 2 === 0 ? "w-3 h-3" : "w-2 h-2"
-                )}
-                style={{
-                  background: `hsl(${Math.random() * 360}, 90%, 60%)`,
-                  transform: `rotate(${Math.random() * 360}deg)`,
-                  boxShadow: `0 0 ${8 + Math.random() * 8}px hsl(${Math.random() * 360}, 90%, 60%)`,
-                }}
-              />
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Lightweight celebration overlay (performance-friendly) */}
+      <CelebrationOverlay show={showCelebration} points={celebrationPoints} />
 
-      {/* Starburst effect */}
-      {showStarburst && (
-        <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
-          <div className="relative">
-            {[...Array(10)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute animate-starburst-ray"
-                style={{
-                  transform: `rotate(${i * 22.5}deg)`,
-                  animationDelay: `${i * 0.03}s`,
-                }}
-              >
-                <div 
-                  className="w-1 h-40 bg-gradient-to-t from-transparent via-warning to-transparent opacity-80"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Rocket trails effect */}
-      {showRocketTrails && (
-        <div className="fixed inset-0 pointer-events-none z-40 overflow-hidden">
-          {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute animate-rocket-launch"
-              style={{
-                left: `${10 + i * 15}%`,
-                bottom: "-50px",
-                animationDelay: `${i * 0.2}s`,
-              }}
-            >
-              <Rocket className="w-8 h-8 text-warning transform rotate-[-45deg]" />
-              <div className="absolute top-4 left-4 w-2 h-16 bg-gradient-to-b from-warning via-accent to-transparent rounded-full opacity-70 animate-flame-flicker" />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Fireworks effect for bullseye */}
-      {showFireworks && (
-        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-          {[...Array(4)].map((_, burstIndex) => (
-            <div 
-              key={burstIndex}
-              className="absolute animate-firework-burst"
-              style={{
-                left: `${10 + burstIndex * 12}%`,
-                top: `${20 + (burstIndex % 3) * 25}%`,
-                animationDelay: `${burstIndex * 0.15}s`,
-              }}
-            >
-              {[...Array(12)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute w-2 h-2 rounded-full animate-firework-particle-enhanced"
-                  style={{
-                    background: `hsl(${(burstIndex * 45 + i * 22) % 360}, 95%, 60%)`,
-                    boxShadow: `0 0 10px hsl(${(burstIndex * 45 + i * 22) % 360}, 95%, 60%)`,
-                    transform: `rotate(${i * 22.5}deg)`,
-                    animationDelay: `${burstIndex * 0.15}s`,
-                  }}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Sparkle overlay for any celebration */}
-      {celebrationLevel > 0 && (
-        <div className="fixed inset-0 pointer-events-none z-45 overflow-hidden">
-          {[...Array(12)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute animate-sparkle-float"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${2 + Math.random() * 2}s`,
-              }}
-            >
-              <Sparkles 
-                className={cn(
-                  "text-warning",
-                  i % 3 === 0 ? "w-6 h-6" : i % 2 === 0 ? "w-4 h-4" : "w-3 h-3"
-                )}
-                style={{ opacity: 0.6 + Math.random() * 0.4 }}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Ambient floating particles */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-40">
-        {[...Array(8)].map((_, i) => (
+      {/* Ambient floating particles (kept very low for performance) */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-25">
+        {[...Array(4)].map((_, i) => (
           <div
             key={i}
             className="absolute rounded-full bg-primary/50 animate-float-particle"
             style={{
-              width: `${3 + Math.random() * 4}px`,
-              height: `${3 + Math.random() * 4}px`,
-              left: `${5 + i * 8}%`,
+              width: `${3 + Math.random() * 3}px`,
+              height: `${3 + Math.random() * 3}px`,
+              left: `${10 + i * 20}%`,
               top: `${Math.random() * 100}%`,
-              animationDelay: `${i * 0.4}s`,
-              animationDuration: `${5 + Math.random() * 3}s`,
+              animationDelay: `${i * 0.6}s`,
+              animationDuration: `${6 + Math.random() * 3}s`,
             }}
           />
         ))}

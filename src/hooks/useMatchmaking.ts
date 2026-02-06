@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { generatePlayerId, generateRoomCode } from "@/lib/gameConfig";
+import { generatePlayerId } from "@/lib/gameConfig";
 import { useToast } from "@/hooks/use-toast";
+import { cancelMatchmake, matchmakeTwoPlayer } from "@/lib/matchmakingApi";
 
 interface MatchmakingState {
   status: "idle" | "searching" | "matched" | "error";
@@ -27,21 +27,15 @@ export const useMatchmaking = () => {
     elapsedTime: 0,
     playerName: null,
   });
+
   const [playerId] = useState(getStoredPlayerId);
   const timerRef = useRef<number | null>(null);
-  const queueIdRef = useRef<string | null>(null);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const pollingRef = useRef<number | null>(null);
 
-  // Cleanup function
-  const cleanup = useCallback(async () => {
+  const cleanup = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
-    }
-    if (channelRef.current) {
-      await supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
     }
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
@@ -49,220 +43,86 @@ export const useMatchmaking = () => {
     }
   }, []);
 
-  // Start searching for a match
-  const startSearch = useCallback(async (playerName: string) => {
-    setState({ status: "searching", roomCode: null, elapsedTime: 0, playerName });
+  const completeMatch = useCallback(
+    (roomCode: string, playerName: string) => {
+      cleanup();
+      setState({ status: "matched", roomCode, elapsedTime: 0, playerName });
+      toast({
+        title: "Match Found!",
+        description: "Joining game...",
+      });
+    },
+    [cleanup, toast]
+  );
 
-    try {
-      // First, cancel any existing queue entries
-      await supabase
-        .from("matchmaking_queue")
-        .update({ status: "cancelled" })
-        .eq("player_id", playerId)
-        .eq("status", "waiting");
-
-      // Add to queue
-      const { data: queueEntry, error } = await supabase
-        .from("matchmaking_queue")
-        .insert({
-          player_id: playerId,
-          player_name: playerName,
-          status: "waiting",
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      queueIdRef.current = queueEntry.id;
+  const startSearch = useCallback(
+    async (playerName: string) => {
+      cleanup();
+      setState({ status: "searching", roomCode: null, elapsedTime: 0, playerName });
 
       // Start elapsed timer
       timerRef.current = window.setInterval(() => {
-        setState(prev => ({ ...prev, elapsedTime: prev.elapsedTime + 1 }));
+        setState((prev) => ({ ...prev, elapsedTime: prev.elapsedTime + 1 }));
       }, 1000);
 
-      // Helper to complete match
-      const completeMatch = async (roomCode: string) => {
+      try {
+        // Best-effort cancel any previous waiting search for this player
+        await cancelMatchmake(playerId);
+
+        const tick = async () => {
+          const result = await matchmakeTwoPlayer(playerId, playerName);
+
+          if (result.status === "matched") {
+            completeMatch(result.room_code, playerName);
+            return;
+          }
+
+          if (result.status === "error") {
+            console.error("Matchmaking error:", result.message);
+            cleanup();
+            setState({ status: "error", roomCode: null, elapsedTime: 0, playerName: null });
+            toast({
+              title: "Error",
+              description: "Failed to start matchmaking",
+              variant: "destructive",
+            });
+          }
+        };
+
+        // First attempt immediately
+        await tick();
+
+        // Poll until matched (the backend returns the existing match if it already happened)
+        pollingRef.current = window.setInterval(tick, 2000);
+      } catch (error) {
+        console.error("Matchmaking error:", error);
         cleanup();
-        setState({ status: "matched", roomCode, elapsedTime: 0, playerName });
+        setState({ status: "error", roomCode: null, elapsedTime: 0, playerName: null });
         toast({
-          title: "Match Found!",
-          description: "Joining game...",
+          title: "Error",
+          description: "Failed to start matchmaking",
+          variant: "destructive",
         });
-      };
-
-      // Check for another waiting player
-      const { data: waitingPlayers } = await supabase
-        .from("matchmaking_queue")
-        .select("*")
-        .eq("status", "waiting")
-        .neq("player_id", playerId)
-        .order("created_at", { ascending: true })
-        .limit(1);
-
-      if (waitingPlayers && waitingPlayers.length > 0) {
-        // Found a match! Create room
-        const otherPlayer = waitingPlayers[0];
-        const roomCode = generateRoomCode();
-
-        // Create the room
-        const { data: room, error: roomError } = await supabase
-          .from("rooms")
-          .insert({
-            code: roomCode,
-            host_id: playerId,
-            is_private: false,
-            mode: "two_player",
-          })
-          .select()
-          .single();
-
-        if (roomError) throw roomError;
-
-        // Update both queue entries
-        await Promise.all([
-          supabase
-            .from("matchmaking_queue")
-            .update({ status: "matched", matched_room_id: room.id })
-            .eq("id", queueEntry.id),
-          supabase
-            .from("matchmaking_queue")
-            .update({ status: "matched", matched_room_id: room.id })
-            .eq("id", otherPlayer.id),
-        ]);
-
-        await completeMatch(roomCode);
-        return;
       }
+    },
+    [cleanup, completeMatch, playerId, toast]
+  );
 
-      // Polling fallback - check every 2 seconds if we got matched
-      pollingRef.current = window.setInterval(async () => {
-        if (!queueIdRef.current) return;
-        
-        const { data: myEntry } = await supabase
-          .from("matchmaking_queue")
-          .select("*, rooms!matchmaking_queue_matched_room_id_fkey(code)")
-          .eq("id", queueIdRef.current)
-          .single();
-        
-        if (myEntry?.status === "matched" && myEntry.rooms?.code) {
-          await completeMatch(myEntry.rooms.code);
-        }
-      }, 2000);
-
-      // Subscribe to queue changes to detect when matched
-      channelRef.current = supabase
-        .channel(`matchmaking-${queueEntry.id}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "matchmaking_queue",
-            filter: `id=eq.${queueEntry.id}`,
-          },
-          async (payload) => {
-            const updated = payload.new as { status: string; matched_room_id: string | null };
-            if (updated.status === "matched" && updated.matched_room_id) {
-              // Get room code
-              const { data: room } = await supabase
-                .from("rooms")
-                .select("code")
-                .eq("id", updated.matched_room_id)
-                .single();
-
-              if (room) {
-                await completeMatch(room.code);
-              }
-            }
-          }
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "matchmaking_queue",
-          },
-          async (payload) => {
-            const newEntry = payload.new as { id: string; player_id: string; status: string };
-            if (newEntry.player_id !== playerId && newEntry.status === "waiting") {
-              // Check if we're still waiting
-              const { data: myEntry } = await supabase
-                .from("matchmaking_queue")
-                .select("*")
-                .eq("id", queueIdRef.current!)
-                .single();
-
-              if (myEntry && myEntry.status === "waiting") {
-                // Create a room!
-                const roomCode = generateRoomCode();
-                const { data: room, error: roomError } = await supabase
-                  .from("rooms")
-                  .insert({
-                    code: roomCode,
-                    host_id: playerId,
-                    is_private: false,
-                    mode: "two_player",
-                  })
-                  .select()
-                  .single();
-
-                if (!roomError && room) {
-                  await Promise.all([
-                    supabase
-                      .from("matchmaking_queue")
-                      .update({ status: "matched", matched_room_id: room.id })
-                      .eq("id", myEntry.id),
-                    supabase
-                      .from("matchmaking_queue")
-                      .update({ status: "matched", matched_room_id: room.id })
-                      .eq("id", newEntry.id),
-                  ]);
-
-                  await completeMatch(roomCode);
-                }
-              }
-            }
-          }
-        )
-        .subscribe();
-
-    } catch (error) {
-      console.error("Matchmaking error:", error);
-      cleanup();
-      setState({ status: "error", roomCode: null, elapsedTime: 0, playerName: null });
-      toast({
-        title: "Error",
-        description: "Failed to start matchmaking",
-        variant: "destructive",
-      });
-    }
-  }, [playerId, toast, cleanup]);
-
-  // Cancel search
   const cancelSearch = useCallback(async () => {
-    if (queueIdRef.current) {
-      await supabase
-        .from("matchmaking_queue")
-        .update({ status: "cancelled" })
-        .eq("id", queueIdRef.current);
+    try {
+      await cancelMatchmake(playerId);
+    } finally {
+      cleanup();
+      setState({ status: "idle", roomCode: null, elapsedTime: 0, playerName: null });
     }
-    cleanup();
-    setState({ status: "idle", roomCode: null, elapsedTime: 0, playerName: null });
-  }, [cleanup]);
+  }, [cleanup, playerId]);
 
-  // Reset state
   const reset = useCallback(() => {
     cleanup();
     setState({ status: "idle", roomCode: null, elapsedTime: 0, playerName: null });
   }, [cleanup]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      cleanup();
-    };
-  }, [cleanup]);
+  useEffect(() => cleanup, [cleanup]);
 
   return {
     ...state,
