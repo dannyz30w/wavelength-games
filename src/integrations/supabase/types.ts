@@ -226,7 +226,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cancel_matchmake: { Args: { p_player_id: string }; Returns: undefined }
+      matchmake_two_player: {
+        Args: { p_player_id: string; p_player_name: string }
+        Returns: Json
+      }
     }
     Enums: {
       game_phase:
