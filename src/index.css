@@ -283,6 +283,7 @@
 
   .animate-sparkle-float {
     animation: sparkle-float 3s ease-in-out infinite;
+    will-change: transform, opacity;
   }
 
   .animate-glow {

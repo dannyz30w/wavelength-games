@@ -38,7 +38,16 @@ serve(async (req) => {
     });
 
     if (action === "cancel") {
+      // Cancel both active searches and any previous completed match so a user can re-match reliably.
       await supabaseAdmin.rpc("cancel_matchmake", { p_player_id: playerId });
+
+      // If the user was previously "matched", clear it as well (otherwise future match requests can return the old room).
+      await supabaseAdmin
+        .from("matchmaking_queue")
+        .update({ status: "cancelled", matched_room_id: null })
+        .eq("player_id", playerId)
+        .eq("status", "matched");
+
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
