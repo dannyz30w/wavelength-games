@@ -450,10 +450,22 @@ export const useGameState = () => {
       });
     } catch (error: unknown) {
       console.error("Error starting round:", error);
-      // Only show error toast for actual errors, not race condition duplicates
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      // Supabase unique constraint violations are expected during race conditions
-      if (!errorMessage.includes("duplicate") && !errorMessage.includes("unique")) {
+
+      // Only show error toast for actual errors, not race condition duplicates.
+      const errObj = typeof error === "object" && error !== null ? (error as Record<string, unknown>) : null;
+      const errorMessage =
+        errObj && typeof errObj.message === "string"
+          ? errObj.message
+          : error instanceof Error
+            ? error.message
+            : String(error);
+      const errorCode = errObj && typeof errObj.code === "string" ? errObj.code : null;
+
+      // Postgres unique constraint violations are expected during race conditions.
+      const isExpectedRace =
+        errorCode === "23505" || /duplicate|unique/i.test(errorMessage);
+
+      if (!isExpectedRace) {
         toast({
           title: "Error",
           description: "Failed to start round",

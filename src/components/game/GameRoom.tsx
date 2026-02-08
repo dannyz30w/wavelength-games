@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SemicircleSpectrum } from "./SemicircleSpectrum";
@@ -149,6 +149,21 @@ export const GameRoom: React.FC<GameRoomProps> = ({
   const showScores = players.length > 2;
   const is1v1 = players.length === 2;
   const hasPlayedBefore = roundCountRef.current > 0;
+  const isHost = !!myPlayer?.is_host;
+
+  // Precompute ambient particles once (avoid Math.random() on every render).
+  const ambientParticles = useMemo(
+    () =>
+      Array.from({ length: 2 }, (_, i) => ({
+        key: `p-${i}`,
+        size: 3 + Math.random() * 2,
+        left: `${15 + i * 50}%`,
+        top: `${Math.random() * 100}%`,
+        delay: `${i * 0.7}s`,
+        duration: `${7 + Math.random() * 2}s`,
+      })),
+    []
+  );
 
   // Auto-advance to next round after reveal, then auto-start for 1v1
   useEffect(() => {
@@ -161,16 +176,23 @@ export const GameRoom: React.FC<GameRoomProps> = ({
   }, [currentRound?.phase, onNextRound]);
 
   // Auto-start next round for 1v1 (including the very first round once the 2nd player joins)
+  // Host starts quickly; non-host will "take over" after a short delay if needed.
   useEffect(() => {
-    if (is1v1 && isWaitingPhase && canStartRound && !hasAutoStartedRef.current && !isLoading) {
+    if (!is1v1 || !isWaitingPhase || !canStartRound) return;
+    if (hasAutoStartedRef.current) return;
+    if (isLoading) return;
+
+    const delayMs = isHost ? 600 : 3600;
+
+    const timer = window.setTimeout(() => {
+      if (hasAutoStartedRef.current) return;
       hasAutoStartedRef.current = true;
-      const timer = setTimeout(() => {
-        playSound("whoosh");
-        onStartRound();
-      }, 600);
-      return () => clearTimeout(timer);
-    }
-  }, [is1v1, isWaitingPhase, canStartRound, isLoading, onStartRound, playSound]);
+      if (isHost) playSound("whoosh");
+      onStartRound();
+    }, delayMs);
+
+    return () => window.clearTimeout(timer);
+  }, [is1v1, isWaitingPhase, canStartRound, isLoading, onStartRound, playSound, isHost]);
 
   if (!room || !myPlayer) return null;
 
@@ -229,19 +251,19 @@ export const GameRoom: React.FC<GameRoomProps> = ({
       {/* Lightweight celebration overlay (performance-friendly) */}
       <CelebrationOverlay show={showCelebration} points={celebrationPoints} />
 
-      {/* Ambient floating particles (kept very low for performance) */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-25">
-        {[...Array(4)].map((_, i) => (
+      {/* Ambient floating particles (very low count, precomputed for performance) */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-20">
+        {ambientParticles.map((p) => (
           <div
-            key={i}
-            className="absolute rounded-full bg-primary/50 animate-float-particle"
+            key={p.key}
+            className="absolute rounded-full bg-primary/40 animate-float-particle"
             style={{
-              width: `${3 + Math.random() * 3}px`,
-              height: `${3 + Math.random() * 3}px`,
-              left: `${10 + i * 20}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${i * 0.6}s`,
-              animationDuration: `${6 + Math.random() * 3}s`,
+              width: `${p.size}px`,
+              height: `${p.size}px`,
+              left: p.left,
+              top: p.top,
+              animationDelay: p.delay,
+              animationDuration: p.duration,
             }}
           />
         ))}
