@@ -31,6 +31,7 @@ export const useMatchmaking = () => {
   const [playerId] = useState(getStoredPlayerId);
   const timerRef = useRef<number | null>(null);
   const pollingRef = useRef<number | null>(null);
+  const inFlightRef = useRef(false);
 
   const cleanup = useCallback(() => {
     if (timerRef.current) {
@@ -70,22 +71,29 @@ export const useMatchmaking = () => {
         await cancelMatchmake(playerId);
 
         const tick = async () => {
-          const result = await matchmakeTwoPlayer(playerId, playerName);
+          if (inFlightRef.current) return;
+          inFlightRef.current = true;
 
-          if (result.status === "matched") {
-            completeMatch(result.room_code, playerName);
-            return;
-          }
+          try {
+            const result = await matchmakeTwoPlayer(playerId, playerName);
 
-          if (result.status === "error") {
-            console.error("Matchmaking error:", result.message);
-            cleanup();
-            setState({ status: "error", roomCode: null, elapsedTime: 0, playerName: null });
-            toast({
-              title: "Error",
-              description: "Failed to start matchmaking",
-              variant: "destructive",
-            });
+            if (result.status === "matched") {
+              completeMatch(result.room_code, playerName);
+              return;
+            }
+
+            if (result.status === "error") {
+              console.error("Matchmaking error:", result.message);
+              cleanup();
+              setState({ status: "error", roomCode: null, elapsedTime: 0, playerName: null });
+              toast({
+                title: "Error",
+                description: "Failed to start matchmaking",
+                variant: "destructive",
+              });
+            }
+          } finally {
+            inFlightRef.current = false;
           }
         };
 
@@ -93,7 +101,7 @@ export const useMatchmaking = () => {
         await tick();
 
         // Poll until matched (the backend returns the existing match if it already happened)
-        pollingRef.current = window.setInterval(tick, 2000);
+        pollingRef.current = window.setInterval(() => void tick(), 2000);
       } catch (error) {
         console.error("Matchmaking error:", error);
         cleanup();
